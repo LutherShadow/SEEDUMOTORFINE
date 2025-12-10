@@ -1,0 +1,20 @@
+project_id = "tctypxdamgmqrlswmxqg"
+
+[functions.generate-suggestions]
+verify_jwt = true
+
+[functions.predict-progress]
+verify_jwt = true
+
+[functions.generate-parent-token]
+verify_jwt = true
+
+[functions.validate-parent-token]
+verify_jwt = false
+
+[functions.submit-parent-response]
+verify_jwt = false
+
+[functions.fix-dimension-names]
+verify_jwt = false
+
