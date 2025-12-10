@@ -57,12 +57,13 @@ const ReportSettings: React.FC = () => {
   const [saving, setSaving] = React.useState(false);
   const [settings, setSettings] = React.useState<ReportSettingsData>({
     id: "",
-    report_type: 'motricidad',
+    // Usar "prediccion" como tipo por defecto, que es el principal en el editor
+    report_type: 'prediccion',
     template: 'modern',
     primary_color: '#8EB8B5',
     logo_urls: [],
     footer_logo_urls: [],
-    header_text: "Reporte de Evaluación de Motricidad Fina",
+    header_text: "Reporte de Evaluación",
     footer_text: "Generado por el Sistema de Evaluación Educativa",
     use_gemini_charts: false,
     content_introduction_text: '',
@@ -199,6 +200,7 @@ const ReportSettings: React.FC = () => {
       }
 
       setIsAdmin(true);
+      // Cargar configuración inicial desde la fila única de report_settings
       await fetchSettings();
     } catch (error: any) {
       console.error("Error checking admin status:", error);
@@ -220,27 +222,27 @@ const ReportSettings: React.FC = () => {
       if (data) {
         const logoUrls = Array.isArray(data.logo_urls) ? data.logo_urls : [];
         const footerLogoUrls = Array.isArray(data.footer_logo_urls) ? data.footer_logo_urls : [];
-        const reportType = (data.report_type || 'motricidad') as ReportType;
+        const reportType = (data.report_type || settings.report_type || 'prediccion') as ReportType;
         const template = getReportTypeTemplate(reportType);
 
         // Build settings object with all dynamic content fields
         const settingsObj: any = {
           id: data.id,
           report_type: reportType,
-          template: (data.template || 'modern') as 'classic' | 'modern' | 'minimal',
-          primary_color: data.primary_color || '#8EB8B5',
+          template: (data.template || template?.defaultConfig.template || 'modern') as 'classic' | 'modern' | 'minimal',
+          primary_color: data.primary_color || template?.defaultConfig.primary_color || '#8EB8B5',
           logo_urls: logoUrls as string[],
           footer_logo_urls: footerLogoUrls as string[],
           header_text: data.header_text || template?.defaultConfig.header_text || "Reporte de Evaluación",
           footer_text: data.footer_text || template?.defaultConfig.footer_text || "Generado por el Sistema de Evaluación Educativa",
           use_gemini_charts: data.use_gemini_charts ?? false,
-          content_company_name: data.content_company_name || '',
-          content_responsible_agent: data.content_responsible_agent || '',
+          content_company_name: data.content_company_name || template?.defaultConfig.content_company_name || '',
+          content_responsible_agent: data.content_responsible_agent || template?.defaultConfig.content_responsible_agent || '',
           section_order: data.section_order || template?.defaultConfig.section_order || []
         };
 
         // Load dynamic content from JSONB field or individual columns
-        const dynamicContent = data.dynamic_content || {};
+        const dynamicContent = (data as any).dynamic_content || {};
         if (template && template.custom_sections) {
           template.custom_sections.forEach(section => {
             const contentKey = `content_${section.id}_text`;
@@ -259,14 +261,14 @@ const ReportSettings: React.FC = () => {
 
         // Update report sections from saved data using template
         if (template && template.custom_sections) {
-          const sectionOrder = data.section_order || template.defaultConfig.section_order || [];
+          const sectionOrder = settingsObj.section_order || template.defaultConfig.section_order || [];
           const updatedSections: ReportSection[] = sectionOrder
             .map((id: string) => {
               const customSection = template.custom_sections.find(s => s.id === id);
               if (!customSection) return null;
 
               const showKey = `content_show_${id}`;
-              const enabled = data[showKey] !== false; // Default to true
+              const enabled = settingsObj[showKey] !== false; // Default to true
 
               return {
                 id: customSection.id,
