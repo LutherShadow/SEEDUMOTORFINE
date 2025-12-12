@@ -1,0 +1,111 @@
+@startuml Modelo de Datos
+
+!define TABLE(name) class name << (T,#FFEBCD) >>
+!define ENUM(name) class name << (E,#D1F2EB) >>
+
+skinparam class {
+  BackgroundColor #F8F9FA
+  ArrowColor #6C757D
+  BorderColor #6C757D
+  FontName Arial
+  FontSize 12
+  FontStyle plain
+}
+
+' === Tablas Principales ===
+TABLE(users) {
+  + id: uuid (PK)
+  + email: string
+  + full_name: string
+  + role: user_role
+  + created_at: timestamp
+  + updated_at: timestamp
+}
+
+TABLE(profiles) {
+  + id: uuid (PK, FK users.id)
+  + avatar_url: string
+  + phone: string
+  + settings: jsonb
+}
+
+TABLE(children) {
+  + id: uuid (PK)
+  + first_name: string
+  + last_name: string
+  + birth_date: date
+  + gender: gender_enum
+  + created_by: uuid (FK users.id)
+  + created_at: timestamp
+  + updated_at: timestamp
+}
+
+TABLE(evaluations) {
+  + id: uuid (PK)
+  + child_id: uuid (FK children.id)
+  + evaluator_id: uuid (FK users.id)
+  + evaluation_date: date
+  + status: evaluation_status
+  + notes: text
+  + scores: jsonb
+  + created_at: timestamp
+  + updated_at: timestamp
+}
+
+TABLE(evaluation_reports) {
+  + id: uuid (PK)
+  + evaluation_id: uuid (FK evaluations.id)
+  + pdf_url: text
+  + storage_path: text
+  + generated_at: timestamp
+}
+
+TABLE(ai_training_models) {
+  + id: uuid (PK)
+  + model_name: string
+  + accuracy: float
+  + precision_high: float
+  + precision_medium: float
+  + precision_low: float
+  + f1_high: float
+  + f1_medium: float
+  + f1_low: float
+  + training_samples: integer
+  + validation_samples: integer
+  + test_samples: integer
+  + confusion_matrix: jsonb
+  + model_context: text
+  + created_at: timestamp
+  + trained_at: timestamp
+}
+
+' === Relaciones ===
+users ||--o{ children : "crea"
+users ||--o{ evaluations : "realiza"
+children ||--o{ evaluations : "tiene"
+evaluations ||--o{ evaluation_reports : "reportes"
+evaluations }o--|| ai_training_models : "utiliza modelo"
+
+' === Enumeraciones ===
+ENUM(user_role) {
+  + admin
+  + evaluator
+  + parent
+  + therapist
+}
+
+ENUM(gender_enum) {
+  + male
+  + female
+  + other
+  + not_specified
+}
+
+ENUM(evaluation_status) {
+  + draft
+  + in_progress
+  + completed
+  + archived
+}
+
+@enduml

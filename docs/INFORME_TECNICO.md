@@ -148,54 +148,7 @@ Diseñar, desarrollar e implementar un sistema web integral basado en React y Su
 
 ### 2. Implementación del Sistema de Evaluación Motriz
 
-```plantuml
-@startuml
-left to right direction
-skinparam actorStyle awesome
-
-actor "Evaluador" as evaluador
-actor "Sistema de IA" as ia
-
-rectangle "Evaluación Motriz" {
-  usecase "Seleccionar Infante" as UC2_1
-  usecase "Registrar Datos Básicos" as UC2_2
-  usecase "Evaluar Actividades" as UC2_3
-  usecase "Registrar Observaciones" as UC2_4
-  usecase "Guardar Evaluación" as UC2_5
-  usecase "Clasificar Nivel" as UC2_6
-  usecase "Generar Recomendaciones" as UC2_7
-  
-  UC2_1 ..> UC2_2 : <<include>>
-  UC2_2 ..> UC2_3 : <<include>>
-  UC2_3 ..> UC2_4 : <<extend>>
-  UC2_4 ..> UC2_5 : <<include>>
-  UC2_5 ..> UC2_6 : <<include>>
-  UC2_6 ..> UC2_7 : <<include>>
-  
-  note right of UC2_3
-    Actividades evaluadas:
-    1. Punzar
-    2. Enhebrar
-    3. Recortar líneas rectas
-    4. Recortar líneas curvas
-    5. Rasgar papel
-    6. Arrugar papel
-    7. Modelar plastilina (figuras simples)
-    8. Modelar plastilina (figuras complejas)
-  end note
-}
-
-evaluador --> UC2_1
-evaluador --> UC2_2
-evaluador --> UC2_3
-evaluador --> UC2_4
-evaluador --> UC2_5
-
-UC2_6 <.. ia : <<use>>
-UC2_7 <.. ia : <<use>>
-
-@enduml
-```
+![Diagrama de casos de uso - Evaluación Motriz](../out/docs/diagramas/casos_uso_evaluacion_motriz/casos_uso_evaluacion_motriz.png)
 
 #### Descripción del Proceso de Evaluación Motriz
 
@@ -236,41 +189,7 @@ UC2_7 <.. ia : <<use>>
 
 ### 5. Sistema de Reportes y Análisis
 
-```plantuml
-@startuml
-title Generación de Reporte PDF - Diagrama de Secuencia
-
-actor Usuario as U
-participant "Frontend" as F
-participant "API (Supabase)" as API
-participant "Edge Function" as EF
-participant "IA Service" as IA
-participant "PDF Generator" as PDF
-
-group Generación de Reporte
-    U -> F: Solicitar reporte de evaluación
-    F -> API: GET /api/evaluations/{id}
-    API --> F: Datos de evaluación
-    
-    alt Datos de IA no disponibles
-        F -> EF: Clasificar nivel motriz (POST)
-        EF -> IA: Procesar datos de evaluación
-        IA --> EF: Resultados de clasificación
-        EF --> F: Datos de IA procesados
-    end
-    
-    F -> PDF: Generar PDF con datos completos
-    PDF --> F: Archivo PDF generado
-    F -> U: Mostrar vista previa del PDF
-    
-    U -> F: Confirmar guardado
-    F -> API: Guardar PDF en almacenamiento
-    API --> F: URL del PDF guardado
-    F -> U: Mostrar mensaje de éxito
-end
-
-@enduml
-```
+![Diagrama de secuencia - Generación de Reporte PDF](../out/docs/diagramas/secuencia_reporte_pdf/secuencia_reporte_pdf.png)
 
 #### Características de los Reportes
 
@@ -341,56 +260,7 @@ end
 
 A continuación se presenta el diagrama de casos de uso principal del sistema, que ilustra las interacciones entre los actores y el sistema:
 
-```plantuml
-@startuml
-left to right direction
-skinparam actorStyle awesome
-
-actor "Evaluador" as evaluador
-actor "Administrador" as admin
-actor "Padre/Madre" as padre
-actor "Sistema de IA" as ia
-
-rectangle "SEEDU Motor Fine" {
-  usecase "Gestionar Perfil" as UC1
-  usecase "Gestionar Infantes" as UC2
-  usecase "Realizar Evaluación Motriz" as UC3
-  usecase "Aplicar Cuestionarios" as UC4
-  usecase "Generar Reportes" as UC5
-  usecase "Seguimiento Longitudinal" as UC6
-  usecase "Gestionar Usuarios" as UC7
-  usecase "Configurar Sistema" as UC8
-  usecase "Entrenar Modelo IA" as UC9
-  usecase "Clasificar Nivel Motriz" as UC10
-  usecase "Generar Recomendaciones" as UC11
-  
-  UC1 <.. UC2 : <<include>>
-  UC2 <.. UC3 : <<include>>
-  UC3 <.. UC4 : <<extend>>
-  UC3 <.. UC5 : <<include>>
-  UC5 <.. UC6 : <<include>>
-}
-
-evaluador --> UC1
-evaluador --> UC2
-evaluador --> UC3
-evaluador --> UC4
-evaluador --> UC5
-evaluador --> UC6
-
-admin --> UC7
-admin --> UC8
-admin --> UC9
-
-padre --> UC5
-
-UC10 <.. ia : <<use>>
-UC11 <.. ia : <<use>>
-UC3 ..> UC10 : <<include>>
-UC5 ..> UC11 : <<include>>
-
-@enduml
-```
+![Diagrama de casos de uso general](../out/docs/diagramas/casos_uso_general/casos_uso_general.png)
 
 **Leyenda de Casos de Uso:**
 1. **Gestionar Perfil**: Actualizar datos personales y credenciales

@@ -1,0 +1,36 @@
+@startuml
+title Generación de Reporte PDF - Diagrama de Secuencia
+
+actor Usuario as U
+participant "Frontend" as F
+participant "API REST (Supabase)" as API
+participant "Edge Function" as EF
+participant "Servicio de IA" as IA
+participant "PDF Generator" as PDF
+participant "Almacenamiento de Archivos" as FS
+
+group Generación de Reporte
+    U -> F: Solicitar reporte de evaluación
+    F -> API: GET /api/evaluations/{id}
+    API --> F: Datos de evaluación
+    
+    alt Datos de IA no disponibles
+        F -> EF: Clasificar nivel motriz (POST)
+        EF -> IA: Procesar datos de evaluación
+        IA --> EF: Resultados de clasificación
+        EF --> F: Datos de IA procesados
+    end
+    
+    F -> PDF: Generar PDF con datos completos
+    PDF --> F: Archivo PDF generado
+    F -> U: Mostrar vista previa del PDF
+    
+    U -> F: Confirmar guardado
+    F -> API: Guardar PDF en almacenamiento
+    API -> FS: Almacenar archivo PDF
+    FS --> API: URL del PDF guardado
+    API --> F: URL del PDF guardado
+    F -> U: Mostrar mensaje de éxito
+end
+
+@enduml
