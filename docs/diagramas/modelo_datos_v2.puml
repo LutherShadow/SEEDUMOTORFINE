@@ -1,0 +1,96 @@
+@startuml
+
+skinparam classAttributeIconSize 0
+skinparam monochrome true
+
+entity "profiles" as profiles {
+  * id : uuid <<pk>>
+  --
+  user_id : uuid
+  full_name : text
+  role : text
+}
+
+entity "children" as children {
+  * id : uuid <<pk>>
+  --
+  evaluator_id : uuid <<fk>>
+  first_name : text
+  last_name : text
+  birthdate : date
+  sex : text
+}
+
+entity "evaluations" as evaluations {
+  * id : uuid <<pk>>
+  --
+  child_id : uuid <<fk>>
+  evaluator_id : uuid <<fk>>
+  date : date
+  score_pesca : int
+  score_pesca_iman : int
+  score_ensartado : int
+  score_enroscar : int
+  score_laberinto_crayon : int
+  score_laberinto_pintura : int
+  score_lanzamiento : int
+  score_candado : int
+  notes : text
+}
+
+entity "questionnaires" as questionnaires {
+  * id : uuid <<pk>>
+  --
+  code : text
+  name : text
+  description : text
+}
+
+entity "questions" as questions {
+  * id : uuid <<pk>>
+  --
+  questionnaire_id : uuid <<fk>>
+  text : text
+  dimension : text
+  order_index : int
+}
+
+entity "questionnaire_results" as q_results {
+  * id : uuid <<pk>>
+  --
+  questionnaire_id : uuid <<fk>>
+  child_id : uuid <<fk>>
+  evaluator_id : uuid <<fk>>
+  created_at : timestamptz
+}
+
+entity "questionnaire_answers" as q_answers {
+  * id : uuid <<pk>>
+  --
+  result_id : uuid <<fk>>
+  question_id : uuid <<fk>>
+  value : numeric
+}
+
+entity "ai_results" as ai_results {
+  * id : uuid <<pk>>
+  --
+  evaluation_id : uuid <<fk>>
+  level : text
+  recommendation : text
+  model_version : text
+}
+
+profiles ||--o{ children : "evaluator_id"
+profiles ||--o{ evaluations : "evaluator_id"
+children ||--o{ evaluations : "child_id"
+
+questionnaires ||--o{ questions : "1..*"
+children ||--o{ q_results : "0..*"
+questionnaires ||--o{ q_results : "0..*"
+q_results ||--o{ q_answers : "1..*"
+
+children ||--o{ ai_results : "0..*"
+evaluations ||--|| ai_results : "1..1"
+
+@enduml

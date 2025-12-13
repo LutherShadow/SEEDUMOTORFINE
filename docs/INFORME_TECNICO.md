@@ -2,7 +2,7 @@
 
 ## Organismo Público Descentralizado del Gobierno del Estado de Puebla
 
-### "HACIA LA EXCELENCIA, CON CALIDEZ HUMANA Y CALIDAD INTEGRAL"
+## "HACIA LA EXCELENCIA, CON CALIDEZ HUMANA Y CALIDAD INTEGRAL"
 
 # INGENIERÍA INFORMÁTICA
 
@@ -10,22 +10,46 @@
 
 ---
 
-## PROYECTO:
-**Desarrollo de un Sistema Web para la Evaluación del Desarrollo Motriz Fino y Estilos de Aprendizaje en Infantes de Preescolar mediante Inteligencia Artificial**
+## Datos Generales
 
-## EMPRESA:
-Instituto Tecnológico Superior de Zacapoaxtla
+- **Proyecto**: *Desarrollo de un Sistema Web para la Evaluación del Desarrollo Motriz Fino y Estilos de Aprendizaje en Infantes de Preescolar mediante Inteligencia Artificial*  
+- **Empresa**: *Instituto Tecnológico Superior de Zacapoaxtla*  
+- **Alumno**: *José Antonio Mercado Santiago*  
+- **Número de control**: *21ZP0024*  
+- **Asesor**: *José Miguel Méndez Alonso*
 
-## ALUMNO:
-José Antonio Mercado Santiago
+> **Zacapoaxtla, Puebla. Diciembre 2025.**  
+> *"Hacia la excelencia, con calidez humana y calidad integral"*
 
-## NÚMERO DE CONTROL:
-21ZP0024
+---
 
-## ASESOR:
-José Miguel Méndez Alonso
+## Agradecimientos
 
-**Zacapoaxtla, Puebla. Diciembre 2025.**
+Se agradece al **Instituto Tecnológico Superior de Zacapoaxtla**, al asesor académico **M.S.C. José Miguel Méndez Alonso**, a los docentes y psicopedagogos que participaron en las pruebas piloto, así como a las instituciones educativas de la Sierra Nororiental de Puebla que facilitaron la aplicación de evaluaciones y cuestionarios. Su apoyo y disposición fueron fundamentales para la realización de este proyecto.
+
+---
+
+## Resumen
+
+El presente informe documenta el desarrollo de **SEEDU Motor Fine**, un sistema web que integra evaluación del desarrollo motriz fino, cuestionarios psicopedagógicos y modelos de Inteligencia Artificial para apoyar la toma de decisiones educativas en infantes de nivel preescolar. El proyecto surgió a partir de un anteproyecto enfocado en el diseño de un modelo de aprendizaje automático para clasificar niveles de desarrollo motriz en la Sierra Nororiental de Puebla y evolucionó hacia una plataforma completa basada en **React** y **Supabase**.
+
+La metodología de trabajo combinó un enfoque ágil iterativo con sprints de dos semanas, modelado de requisitos con casos de uso y diseño de base de datos relacional. Se implementaron módulos de gestión de infantes, registro de ocho actividades motrices estandarizadas, aplicación de tres cuestionarios (Cornell, CHAEA y TAM), generación de reportes en PDF/Excel y un clasificador supervisado (Random Forest/SVM) desplegado mediante Edge Functions.
+
+Los resultados muestran un modelo de IA con métricas de desempeño satisfactorias (accuracy cercana al 87.5%) y una alta aceptación por parte de usuarios piloto, quienes reportan mejoras en la eficiencia del proceso de evaluación y en la precisión de las intervenciones pedagógicas. Se concluye que SEEDU Motor Fine constituye una herramienta viable para fortalecer la evaluación psicopedagógica en contextos educativos con recursos limitados y se proponen líneas de trabajo futuro para ampliar su alcance.
+
+---
+
+## Índice
+
+1. [Generalidades del Proyecto](#generalidades-del-proyecto)  
+2. [Marco Teórico](#marco-teórico)  
+3. [Metodología de Desarrollo](#metodología-de-desarrollo)  
+4. [Desarrollo e Implementación](#desarrollo-e-implementación)  
+5. [Resultados y Evaluación](#resultados-y-evaluación)  
+6. [Conclusiones](#conclusiones)  
+7. [Competencias Desarrolladas](#competencias-desarrolladas)  
+8. [Fuentes de Información](#fuentes-de-información-referencias-bibliográficas)  
+9. [Anexos](#anexos)
 
 ---
 
@@ -131,6 +155,8 @@ El desarrollo de **SEEDU Motor Fine** se justifica por su capacidad para transfo
 - **Formación docente**: Servir como recurso didáctico para estudiantes de psicopedagogía y educación
 - **Base para investigación**: Generar datos estructurados útiles para estudios longitudinales del desarrollo infantil
 
+Adicionalmente, el proyecto retoma la motivación planteada en el anteproyecto de residencia profesional, en el cual se propuso inicialmente el **desarrollo de un modelo de inteligencia artificial para la evaluación del desarrollo motriz fino en infantes de preescolar de la Sierra Nororiental del estado de Puebla**. En la versión final materializada en **SEEDU Motor Fine**, dicho modelo se integró en una plataforma web completa que amplía el alcance original al incorporar cuestionarios psicopedagógicos y módulos de reporte, manteniendo el énfasis en el diagnóstico temprano y en la generación de recomendaciones personalizadas basadas en evidencia científica (Gallahue & Ozmun, 2012; Polsley et al., 2021; Trávez Trávez et al., 2024).
+
 ---
 
 # Objetivos del Proyecto
@@ -138,6 +164,8 @@ El desarrollo de **SEEDU Motor Fine** se justifica por su capacidad para transfo
 ## Objetivo General
 
 Diseñar, desarrollar e implementar un sistema web integral basado en React y Supabase que permita a profesionales de la educación y la psicopedagogía realizar evaluaciones estandarizadas del desarrollo motriz fino en infantes de preescolar, aplicar cuestionarios de estilos de aprendizaje validados, y generar análisis automatizados mediante técnicas de Inteligencia Artificial para facilitar la toma de decisiones pedagógicas personalizadas.
+
+Este objetivo general concreta y amplía la propuesta teórica del **anteproyecto de residencia profesional**, donde el foco principal era el **desarrollo de un modelo de aprendizaje automático** capaz de clasificar el nivel de desarrollo motriz fino. En el proyecto final, ese modelo de IA se integró efectivamente en la arquitectura del sistema SEEDU Motor Fine como un módulo de inferencia desplegado en Edge Functions, articulado con los demás componentes (evaluaciones motrices, cuestionarios y reportes) para ofrecer una solución integral orientada al contexto educativo de la Sierra Nororiental de Puebla.
 
 ## Objetivos Específicos
 
@@ -284,17 +312,22 @@ El desarrollo motriz fino se refiere a la capacidad de realizar movimientos prec
 - **Expresión artística**: Dibujar, pintar, modelar, recortar
 - **Desarrollo cognitivo**: La manipulación de objetos está ligada al pensamiento concreto
 
-Las actividades evaluadas en SEEDU Motor Fine han sido seleccionadas por ser indicadores clave del desarrollo motriz fino:
+Tal como señalan los estudios clásicos del desarrollo infantil (Gesell, 1940; Piaget, 1952) y las pruebas estandarizadas de integración visomotora (Beery & Beery, 2010), la práctica sistemática de tareas manipulativas y gráficas favorece la maduración de estas habilidades.
 
-1. **Punzar**: Coordinación óculo-manual, control de fuerza, precisión
-2. **Enhebrar**: Coordinación bilateral, paciencia, concentración
-3. **Recortar**: Control de herramientas, lateralidad, planificación motora
-4. **Rasgar y arrugar**: Fuerza digital, coordinación bimanual
-5. **Modelar**: Creatividad, representación tridimensional, destreza manual
+En el contexto de SEEDU Motor Fine, las actividades implementadas en el módulo de evaluación han sido seleccionadas por ser indicadores clave del desarrollo motriz fino y de la coordinación visomotora. Las ocho actividades estandarizadas son:
+
+1. **Juego de Pesca**: Coordinación óculo-manual y precisión al atrapar piezas con una caña de pesca de juguete.
+2. **Pesca con imán**: Precisión en el uso del imán para atraer objetos pequeños y coordinación fina mano-dedos.
+3. **Ensartado**: Coordinación y precisión al insertar cuentas en un cordón, reforzando control digital y atención.
+4. **Enroscar botellas**: Fuerza y precisión en el movimiento de giro para enroscar tapas, con participación de ambas manos.
+5. **Laberintos con crayón**: Control del trazo, direccionalidad y planificación gráfica al seguir caminos predefinidos.
+6. **Laberintos con dáctilo pintura**: Coordinación del trazo con pintura dactilar y estimulación sensorial táctil.
+7. **Juego de lanzamiento con muñecas**: Precisión en el agarre y manipulación de objetos durante lanzamientos controlados.
+8. **Juego del candado**: Coordinación y precisión para manipular una llave y abrir candados, trabajando secuencias motoras finas.
 
 ## Estilos de Aprendizaje y su Relevancia Educativa
 
-Los estilos de aprendizaje se refieren a las preferencias individuales en la forma de percibir, procesar y recordar información. Aunque existen múltiples modelos teóricos, SEEDU integra tres enfoques complementarios:
+Los estilos de aprendizaje se refieren a las preferencias individuales en la forma de percibir, procesar y recordar información. Aunque existen múltiples modelos teóricos, SEEDU integra tres enfoques complementarios que se apoyan en la literatura sobre aprendizaje experiencial y estilos de estudio (Kolb, 1984; Honey & Mumford, 1992; Pauk & Owens, 2010):
 
 ### Modelo CHAEA (Honey-Alonso)
 Identifica cuatro estilos principales:
@@ -310,7 +343,7 @@ Evalúa hábitos de estudio relacionados con:
 - Estrategias metacognitivas
 
 ### Modelo TAM (Technology Acceptance Model)
-Mide la disposición hacia el uso de tecnología educativa:
+Mide la disposición hacia el uso de tecnología educativa (Davis, 1989):
 - Utilidad percibida
 - Facilidad de uso percibida
 - Actitud hacia el uso
@@ -320,7 +353,7 @@ La integración de estos instrumentos permite crear perfiles educativos completo
 
 ## Inteligencia Artificial en Evaluación Educativa
 
-La aplicación de técnicas de Machine Learning en el contexto educativo ofrece ventajas significativas:
+La aplicación de técnicas de Machine Learning en el contexto educativo ofrece ventajas significativas (Russell & Norvig, 2020; Goodfellow, Bengio & Courville, 2016):
 
 ### Aprendizaje Supervisado
 SEEDU utiliza algoritmos de clasificación supervisada entrenados con datos históricos de evaluaciones previamente clasificadas por expertos. El modelo aprende patrones que permiten:
@@ -539,7 +572,7 @@ El desarrollo de **SEEDU Motor Fine** ha demostrado ser exitoso en cumplir sus o
 - La efectividad del sistema depende de la calidad en la captura de datos por parte de los evaluadores
 - Se requiere conectividad a internet para el funcionamiento completo
 
-## Trabajo Futuro
+## Recomendaciones
 
 1. **Expansión de instrumentos**: Integrar más cuestionarios psicopedagógicos
 2. **Análisis predictivo avanzado**: Implementar modelos que predigan trayectorias de desarrollo
@@ -548,9 +581,23 @@ El desarrollo de **SEEDU Motor Fine** ha demostrado ser exitoso en cumplir sus o
 5. **Integración con sistemas escolares**: APIs para sincronización con sistemas de gestión escolar existentes
 6. **Gamificación**: Incorporar elementos lúdicos en las evaluaciones para mayor engagement de los infantes
 
+## Experiencia personal profesional adquirida
+
+La realización de este proyecto de residencia profesional permitió consolidar competencias técnicas en desarrollo web full-stack, diseño de bases de datos y aplicación de modelos de Inteligencia Artificial en un contexto real. Asimismo, se fortalecieron habilidades blandas como el trabajo en equipo con docentes y psicopedagogos, la comunicación efectiva de resultados a públicos no técnicos, la gestión del tiempo en ciclos iterativos de desarrollo y la capacidad de aprendizaje autónomo frente a nuevas tecnologías (Supabase, Edge Functions, librerías de visualización, entre otras).
+
 ---
 
-# Referencias Bibliográficas
+## Competencias Desarrolladas
+
+Durante el proyecto se desarrollaron y/o aplicaron las siguientes competencias:
+
+- **Competencias técnicas**: Desarrollo con React y TypeScript, integración de Supabase (PostgreSQL, Auth, RLS, Edge Functions), diseño de modelos de Machine Learning supervisado, uso de herramientas de generación de reportes (PDF, Excel) y control de versiones con Git.
+- **Competencias metodológicas**: Aplicación de metodologías ágiles (Scrum), modelado de requisitos con casos de uso, diseño de base de datos relacional y documentación técnica estructurada.
+- **Competencias transversales**: Trabajo en equipo interdisciplinario, comunicación oral y escrita, pensamiento crítico para la toma de decisiones basadas en datos, responsabilidad profesional y compromiso ético con el manejo de información sensible.
+
+---
+
+## Fuentes de Información (Referencias Bibliográficas)
 
 1. Gesell, A. (1940). *The First Five Years of Life: A Guide to the Study of the Preschool Child*. Harper & Brothers.
 
@@ -568,42 +615,514 @@ El desarrollo de **SEEDU Motor Fine** ha demostrado ser exitoso en cumplir sus o
 
 8. Russell, S., & Norvig, P. (2020). *Artificial Intelligence: A Modern Approach* (4th ed.). Pearson.
 
-9. Goodfellow, I., Bengio, Y., & Courville, A. (2016). *Deep Learning*. MIT Press.
+9. Goodfellow, I., Bengio, Y., & Courville, I. (2016). *Deep Learning*. MIT Press.
 
-10. React Documentation. (2024). Retrieved from https://react.dev/
+10. Gallahue, D. L., & Ozmun, J. C. (2012). *Understanding motor development in children* (7th ed.). McGraw-Hill.
 
-11. Supabase Documentation. (2024). Retrieved from https://supabase.com/docs
+11. Polsley, S., Powell, L., Kim, H., Thomas, X., Liew, J., & Hammond, T. (2021). Detecting children’s fine motor skill development using machine learning. *International Journal of Artificial Intelligence in Education*, 1–34. https://doi.org/10.1007/s40593-021-00279-7
+
+12. Trávez Trávez, K. L., Inaquiza Camacho, E. L., & Bravo Zambonino, J. M. (2024). Los test motrices como instrumento de diagnóstico para el desarrollo de la psicomotricidad fina. *Tesla Revista Científica*, 4(1), e337. https://doi.org/10.55204/trc.v4i1.e337
+
+13. Shunta Rubio, E. M., & Chasi Espinosa, J. N. (2023). La motricidad fina en la educación inicial. *Ciencia Latina Revista Científica Multidisciplinar*, 7(1), 3568–3598. https://doi.org/10.37811/cl_rcm.v7i1.4677
+
+14. React Documentation. (2024). Retrieved from https://react.dev/
+
+15. Supabase Documentation. (2024). Retrieved from https://supabase.com/docs
 
 ---
 
-# Anexos
+## Anexos
 
 ## Anexo A: Actividades de Evaluación Motriz
 
-Descripción detallada de cada una de las 8 actividades evaluadas, incluyendo materiales requeridos y criterios de puntuación.
+En este anexo se describen en detalle las ocho actividades estandarizadas utilizadas para evaluar el desarrollo motriz fino de los infantes en edad preescolar. Para cada actividad se especifican:
+
+- Objetivo de la actividad.
+- Materiales necesarios.
+- Procedimiento de aplicación.
+- Criterios de puntuación (escala de 0 a 10).
+- Indicadores observables de desempeño.
+
+Las actividades incluidas en el sistema SEEDU Motor Fine son:
+
+1. **Juego de Pesca**: Actividad lúdica que evalúa coordinación óculo-manual y precisión al atrapar piezas con una caña de pesca de juguete.
+2. **Pesca con imán**: Permite observar la precisión en el uso de un imán para atraer objetos pequeños, así como la coordinación fina de mano y dedos.
+3. **Ensartado**: Evalúa la coordinación y precisión al insertar cuentas en un cordón, reforzando el control digital y la atención sostenida.
+4. **Enroscar botellas**: Mide la fuerza y precisión en el movimiento de giro para enroscar tapas, así como la coordinación bilateral.
+5. **Laberintos con crayón**: Considera el control del trazo y la direccionalidad al seguir laberintos en papel, como preparación para la escritura.
+6. **Laberintos con dáctilo pintura**: Trabaja la coordinación y el control del trazo utilizando pintura dactilar, incorporando además estimulación sensorial.
+7. **Juego de lanzamiento con muñecas**: Evalúa la precisión en el agarre y manipulación de objetos al realizar lanzamientos controlados, apoyando la planificación motriz.
+8. **Juego del candado**: Actividad centrada en la coordinación y precisión para manipular una llave y abrir un candado, reforzando movimientos finos y secuencias motoras.
+
+La descripción detallada de cada actividad, junto con ejemplos de desempeño esperado para cada rango de puntuación, se presenta en fichas técnicas individuales dentro de este anexo, con el fin de estandarizar la aplicación de las pruebas y reducir la subjetividad entre diferentes evaluadores. La selección de estas actividades se fundamenta en la literatura sobre desarrollo motriz y coordinación visomotora en la infancia (Gesell, 1940; Piaget, 1952; Beery & Beery, 2010).
+
+### A.1 Juego de Pesca
+
+**Objetivo**: Evaluar la coordinación óculo-manual y la precisión en movimientos finos de la mano al atrapar piezas con una caña de pesca de juguete.
+
+**Materiales**:
+
+- Juego de pesca de juguete (caña y peces u objetos similares).
+- Recipiente o superficie donde se ubiquen las piezas a pescar.
+
+**Procedimiento**:
+
+1. Colocar los peces u objetos sobre la superficie o dentro del recipiente.
+2. Pedir al infante que los atrape utilizando la caña de pesca.
+3. Observar la precisión, el control del movimiento y el agarre.
+
+**Criterios de puntuación**:
+
+- 0-2 puntos: No logra atrapar las piezas o requiere ayuda constante.
+- 3-5 puntos: Atrapa algunas piezas, pero con dificultad y poca precisión.
+- 6-8 puntos: Atrapa la mayoría de las piezas con moderada precisión.
+- 9-10 puntos: Atrapa la mayoría o todas las piezas con alta precisión y control.
+
+### A.2 Pesca con imán
+
+**Objetivo**: Evaluar la coordinación fina y la precisión al utilizar un imán para atraer y levantar objetos pequeños.
+
+**Materiales**:
+
+- Un imán adecuado para uso infantil.
+- Objetos metálicos pequeños y seguros (por ejemplo, piezas de juego con superficie metálica).
+
+**Procedimiento**:
+
+1. Colocar los objetos metálicos sobre una superficie plana o ligeramente cubiertos (arena, arroz, etc.).
+2. Pedir al infante que los localice y los atraiga usando el imán.
+3. Observar la precisión en el movimiento, el control al levantar los objetos y la coordinación mano-ojo.
+
+**Criterios de puntuación**:
+
+- 0-2 puntos: No logra atraer o levantar los objetos con el imán.
+- 3-5 puntos: Atrae algunos objetos, pero con dificultad y poca coordinación.
+- 6-8 puntos: Atrae y levanta la mayoría de los objetos con moderada coordinación.
+- 9-10 puntos: Atrae y levanta la mayoría o todos los objetos con alta precisión y control.
+
+### A.3 Ensartado
+
+**Objetivo**: Evaluar la coordinación óculo-manual, el control digital y la atención sostenida al insertar cuentas u otros elementos en un cordón.
+
+**Materiales**:
+
+- Cordón o cuerda gruesa.
+- Cuentas, botones u objetos con orificio suficientemente amplio.
+
+**Procedimiento**:
+
+1. Colocar las cuentas u objetos sobre una superficie plana.
+2. Mostrar al infante cómo insertar la primera cuenta en el cordón.
+3. Pedirle que continúe ensartando hasta completar una cantidad determinada.
+4. Observar el agarre, la precisión y la secuencia de movimientos.
+
+**Criterios de puntuación**:
+
+- 0-2 puntos: No logra ensartar las cuentas o requiere ayuda constante.
+- 3-5 puntos: Ensarta algunas cuentas, pero con mucha dificultad y desorganización.
+- 6-8 puntos: Ensarta la mayoría de las cuentas con coordinación moderada.
+- 9-10 puntos: Ensarta la mayoría o todas las cuentas con alta precisión, ritmo y control.
+
+### A.4 Enroscar botellas
+
+**Objetivo**: Evaluar la fuerza y precisión del movimiento de giro para enroscar tapas, así como la coordinación bilateral (uso de ambas manos).
+
+**Materiales**:
+
+- Botellas de plástico con tapas de diferentes tamaños.
+- Superficie estable donde colocarlas.
+
+**Procedimiento**:
+
+1. Colocar las botellas sin tapa sobre la mesa.
+2. Entregar las tapas mezcladas y pedir al infante que identifique la tapa correcta para cada botella.
+3. Solicitar que enrosque cada tapa hasta cerrarla completamente.
+4. Observar la fuerza aplicada, la precisión del giro y la coordinación entre ambas manos.
+
+**Criterios de puntuación**:
+
+- 0-2 puntos: No logra enroscar las tapas o las deja sin ajustar.
+- 3-5 puntos: Enrosca algunas tapas con dificultad y poca precisión.
+- 6-8 puntos: Enrosca la mayoría de las tapas de forma aceptable.
+- 9-10 puntos: Enrosca la mayoría o todas las tapas de manera firme, rápida y precisa.
+
+### A.5 Laberintos con crayón
+
+**Objetivo**: Valorar el control del trazo, la direccionalidad y la planificación gráfica al seguir un recorrido en un laberinto impreso.
+
+**Materiales**:
+
+- Hojas con laberintos impresos de diferente dificultad.
+- Crayones o lápices de colores.
+
+**Procedimiento**:
+
+1. Presentar un laberinto adecuado al nivel del infante.
+2. Indicar el punto de inicio y el punto de llegada.
+3. Pedir que trace el camino desde el inicio hasta la meta sin tocar las líneas del laberinto.
+4. Observar el control del trazo, la velocidad y la corrección de errores.
+
+**Criterios de puntuación**:
+
+- 0-2 puntos: No completa el laberinto o traza fuera de los bordes de forma constante.
+- 3-5 puntos: Completa parcialmente el recorrido con numerosos desvíos.
+- 6-8 puntos: Completa el laberinto con algunos errores menores.
+- 9-10 puntos: Completa el laberinto con un trazo continuo, controlado y con escasos errores.
+
+### A.6 Laberintos con dáctilo pintura
+
+**Objetivo**: Evaluar la coordinación del trazo utilizando pintura dactilar, incorporando estimulación sensorial táctil y control de movimientos finos.
+
+**Materiales**:
+
+- Pintura dactilar no tóxica.
+- Hojas grandes con caminos o laberintos sencillos.
+- Delantal o protección para la ropa y toallitas húmedas.
+
+**Procedimiento**:
+
+1. Colocar la hoja con el camino o laberinto sobre una superficie protegida.
+2. Aplicar una pequeña cantidad de pintura en uno o dos dedos del infante.
+3. Indicar que recorra el camino con los dedos siguiendo la ruta marcada.
+4. Observar el control del movimiento, la capacidad para mantenerse dentro del camino y la respuesta sensorial.
+
+**Criterios de puntuación**:
+
+- 0-2 puntos: No sigue el camino o se desplaza fuera de los bordes la mayor parte del tiempo.
+- 3-5 puntos: Sigue parcialmente el recorrido con frecuentes salidas del camino.
+- 6-8 puntos: Recorre la mayor parte del camino con control aceptable.
+- 9-10 puntos: Recorre casi todo el camino manteniéndose dentro de los límites con buen control y coordinación.
+
+### A.7 Juego de lanzamiento con muñecas
+
+**Objetivo**: Evaluar la precisión en el agarre y la manipulación de objetos durante lanzamientos controlados, así como la coordinación ojo-mano y la planificación motriz.
+
+**Materiales**:
+
+- Muñecas de peluche u otros objetos blandos y seguros.
+- Contenedores, dianas o marcas en el suelo como objetivos.
+
+**Procedimiento**:
+
+1. Colocar uno o varios objetivos a diferentes distancias.
+2. Pedir al infante que lance las muñecas u objetos hacia los objetivos.
+3. Variar la distancia o la posición de los objetivos según el desempeño.
+4. Observar la postura, el agarre, la trayectoria del lanzamiento y la precisión.
+
+**Criterios de puntuación**:
+
+- 0-2 puntos: Los lanzamientos rara vez alcanzan el objetivo o carecen de control.
+- 3-5 puntos: Algunos lanzamientos se aproximan al objetivo, pero con poca precisión.
+- 6-8 puntos: La mayoría de los lanzamientos se acercan o impactan en el objetivo.
+- 9-10 puntos: La mayoría de los lanzamientos impactan de forma clara y controlada en el objetivo.
+
+### A.8 Juego del candado
+
+**Objetivo**: Evaluar la coordinación fina y la precisión al manipular una llave para abrir y cerrar candados, trabajando secuencias motoras y control de fuerza.
+
+**Materiales**:
+
+- Uno o varios candados adecuados para uso infantil.
+- Juego de llaves correspondiente.
+
+**Procedimiento**:
+
+1. Mostrar al infante el candado cerrado y la llave correspondiente.
+2. Pedir que inserte la llave en la cerradura y abra el candado.
+3. Opcionalmente, solicitar que vuelva a cerrar el candado y repita la acción.
+4. Observar la orientación de la llave, la precisión del movimiento y el control de la fuerza.
+
+**Criterios de puntuación**:
+
+- 0-2 puntos: No logra insertar la llave o abrir el candado.
+- 3-5 puntos: Inserta la llave con dificultad y requiere ayuda para abrir/cerrar.
+- 6-8 puntos: Inserta y gira la llave con coordinación moderada, logrando abrir/cerrar la mayoría de las veces.
+- 9-10 puntos: Inserta y gira la llave con precisión y control, abriendo y cerrando el candado de forma autónoma y segura.
 
 ## Anexo B: Cuestionarios Psicopedagógicos
 
-Listado completo de preguntas de los tres cuestionarios integrados:
-- Cornell Note-Taking System (44 preguntas)
-- CHAEA (80 preguntas)
-- TAM (84 preguntas)
+Este anexo presenta el contenido y la estructura de los tres cuestionarios psicopedagógicos integrados en **SEEDU Motor Fine**, así como una descripción general de sus dimensiones e interpretación de resultados. Cada instrumento se incluye con su listado completo de ítems en secciones posteriores.
+
+Para cada cuestionario se documenta:
+
+- Objetivo del instrumento.
+- Número total de preguntas.
+- Dimensiones o factores evaluados.
+- Escala de respuesta utilizada.
+- Claves de puntuación y lineamientos básicos de interpretación.
+
+Los cuestionarios contemplados son:
+
+1. **Cornell Note-Taking System Assessment (44 preguntas)**  
+   Instrumento orientado a valorar hábitos y técnicas de estudio, organización de la información, estrategias de revisión y habilidades metacognitivas vinculadas al uso del sistema Cornell.
+
+2. **CHAEA - Cuestionario Honey-Alonso de Estilos de Aprendizaje (80 preguntas)**  
+   Evalúa la preferencia del estudiante por cuatro estilos de aprendizaje: Activo, Reflexivo, Teórico y Pragmático. Las puntuaciones obtenidas en cada dimensión permiten identificar estilos predominantes y secundarios, lo que facilita el diseño de estrategias pedagógicas diferenciadas.
+
+3. **TAM - Technology Acceptance Model (84 preguntas)**  
+   Basado en el modelo de Aceptación de la Tecnología, mide variables como utilidad percibida, facilidad de uso percibida, actitud hacia el uso de la tecnología e intención de uso. Sus resultados permiten analizar la disposición de los usuarios a adoptar herramientas tecnológicas en el contexto educativo.
+
+En las subsecciones de este anexo se presenta, para cada cuestionario, una selección de ítems representativos y se indica la ruta de los archivos donde se resguarda el banco completo de preguntas utilizado por el sistema.
+
+### B.1 Cornell Note-Taking System Assessment
+
+**Objetivo**: Evaluar hábitos y técnicas de estudio asociados al uso de un sistema estructurado de toma de notas (Cornell), así como la organización, revisión y síntesis de la información.
+
+**Dimensiones principales** (ejemplo):
+
+- Organización del material de estudio.
+- Uso de palabras clave y preguntas guía.
+- Revisión y resumen posterior a la clase.
+
+**Ejemplos de ítems** (respuestas tipo Likert, por ejemplo: Nunca / A veces / Casi siempre / Siempre):
+
+1. "Después de cada clase, reviso mis notas y subrayo las ideas principales."  
+2. "Utilizo columnas separadas para anotar ideas clave y detalles de apoyo."  
+3. "Escribo un breve resumen al final de mis notas para integrar lo aprendido."  
+4. "Formulo preguntas a partir de mis notas para estudiar antes de un examen."  
+5. "Reviso mis notas de clases anteriores antes de comenzar una nueva sesión."  
+
+**Archivo de referencia** (banco completo de ítems):
+
+- `docs/cuestionarios/cornell_items.md`
+
+### B.2 CHAEA - Cuestionario Honey-Alonso de Estilos de Aprendizaje
+
+**Objetivo**: Identificar la preferencia del estudiante por los estilos de aprendizaje Activo, Reflexivo, Teórico y Pragmático, con base en el modelo de Honey y Mumford adaptado por Alonso.
+
+**Dimensiones principales**:
+
+- Estilo Activo.  
+- Estilo Reflexivo.  
+- Estilo Teórico.  
+- Estilo Pragmático.
+
+**Ejemplos de ítems** (respuestas tipo Sí / No o De acuerdo / En desacuerdo):
+
+- Activo: "Me gusta participar en actividades nuevas y vivir experiencias distintas, incluso si implican cierto riesgo académico."  
+- Reflexivo: "Antes de tomar una decisión de estudio, prefiero observar cómo trabajan mis compañeros y analizar los resultados."  
+- Teórico: "Disfruto cuando los contenidos se explican de forma lógica, ordenada y basada en modelos o teorías."  
+- Pragmático: "Valoro más aquellos contenidos que puedo aplicar de manera inmediata en situaciones reales."  
+
+**Archivo de referencia** (banco completo de ítems):
+
+- `docs/cuestionarios/chaeaa_items.md`
+
+### B.3 TAM - Technology Acceptance Model
+
+**Objetivo**: Medir la aceptación y disposición hacia el uso de la tecnología educativa por parte de los usuarios, considerando variables como utilidad percibida, facilidad de uso, actitud hacia el uso e intención de uso.
+
+**Dimensiones principales**:
+
+- Utilidad percibida (Perceived Usefulness).  
+- Facilidad de uso percibida (Perceived Ease of Use).  
+- Actitud hacia el uso.  
+- Intención de uso.
+
+**Ejemplos de ítems** (respuestas tipo Likert: Totalmente en desacuerdo → Totalmente de acuerdo):
+
+1. "El uso de SEEDU Motor Fine mejora la calidad de mis evaluaciones psicopedagógicas." (Utilidad percibida)  
+2. "Aprender a utilizar SEEDU Motor Fine me parece sencillo." (Facilidad de uso percibida)  
+3. "Me siento cómodo utilizando SEEDU Motor Fine como parte de mi práctica profesional." (Actitud hacia el uso)  
+4. "Tengo la intención de seguir utilizando SEEDU Motor Fine en futuras evaluaciones." (Intención de uso)  
+5. "Considero que el tiempo invertido en aprender la herramienta se ve recompensado por los beneficios obtenidos." (Utilidad percibida)  
+
+**Archivo de referencia** (banco completo de ítems):
+
+- `docs/cuestionarios/tam_items.md`
 
 ## Anexo C: Arquitectura del Sistema
 
-Diagramas de arquitectura, flujos de datos y esquema de base de datos(pendiente).
+En esta sección se describe la arquitectura general del sistema **SEEDU Motor Fine**, considerando sus capas lógicas, componentes principales, flujos de datos y el esquema de base de datos implementado sobre Supabase.
 
-## Anexo D: Manual de Usuario
+### C.1 Vista General de la Arquitectura
 
-Guía paso a paso para el uso del sistema, disponible en `docs/MANUAL_USUARIO.md`.
+El sistema adopta una arquitectura **cliente-servidor en la nube**, basada en una **Single Page Application (SPA)** desarrollada con **React + TypeScript** y un backend administrado mediante **Supabase (PostgreSQL, Auth, RLS, Edge Functions)**. El despliegue se realiza en servicios cloud tipo **Netlify (frontend)** y **Supabase (backend)**.
 
-## Anexo E: Manual Técnico
+A nivel macro, la solución se organiza en las siguientes capas:
 
-Documentación técnica para desarrolladores, disponible en `docs/MANUAL_TECNICO.md`.
+- **Capa de Presentación (Frontend)**  
+  Aplicación React empaquetada como SPA, responsable de la interacción con el usuario (evaluadores, administradores y, en algunos casos, padres de familia). Incluye:
+  - Enrutamiento y navegación (`src/main.tsx`, `src/App.tsx`, componentes de `src/pages/`).
+  - Componentes UI reutilizables (botones, formularios, tarjetas, tablas, tooltips, toasts, etc.).
+  - Proveedores de contexto para temas transversales como tema oscuro/claro (`ThemeProvider`), notificaciones, tours interactivos (`TutorialProvider`) y manejo de estado con **React Query**.
 
-## Anexo F: Código Fuente
+- **Capa de Lógica de Aplicación**  
+  Conjunto de hooks, servicios y componentes que encapsulan la lógica de negocio:
+  - Manejo de autenticación y sesión con **Supabase Auth**.
+  - Gestión de infantes, evaluaciones motrices y cuestionarios (páginas `Children`, `Evaluations`, `Questionnaires`, etc.).
+  - Generación de reportes, dashboards y visualizaciones.
 
-Repositorio del proyecto disponible en el sistema de control de versiones.
+- **Capa de Datos y Servicios Backend (Supabase)**  
+  Plataforma Backend-as-a-Service que provee:
+  - **Base de datos PostgreSQL** con tablas normalizadas para perfiles, infantes, evaluaciones, cuestionarios y resultados de IA.
+  - **Políticas de Seguridad a Nivel de Fila (RLS)** para aislar los datos por usuario/rol.
+  - **Supabase Auth** para registro, inicio de sesión, recuperación de contraseña y gestión de sesiones.
+  - **Edge Functions** para lógica avanzada, como el consumo de modelos de Machine Learning entrenados externamente.
+
+- **Capa de Inteligencia Artificial**  
+  Modelos de clasificación entrenados (ej. Random Forest / SVM) que consumen las puntuaciones motrices y devuelven:
+  - Nivel de desarrollo (Alto/Medio/Bajo).
+  - Recomendaciones personalizadas almacenadas en la tabla `ai_results` u otras estructuras relacionadas.
+
+### C.2 Arquitectura de Software (Frontend)
+
+El frontend se estructura como una SPA con las siguientes características:
+
+- **Punto de entrada**: `src/main.tsx`, donde se monta el componente raíz `App` dentro del elemento `root` del DOM y se registra el **Service Worker** para soporte offline básico.
+- **Componente raíz**: `src/App.tsx`, que configura:
+  - **React Router** (`BrowserRouter`, `Routes`, `Route`) para la navegación entre vistas (`/dashboard`, `/children`, `/evaluations`, `/reports`, `/questionnaires`, etc.).
+  - **QueryClientProvider** de `@tanstack/react-query` para el manejo de caché de datos y estados de peticiones.
+  - **ThemeProvider** para soporte de modo claro/oscuro.
+  - **TutorialProvider** para tours guiados (`react-joyride`).
+  - Componentes globales como `OfflineIndicator`, `Toaster` y `Sonner` para notificaciones.
+
+- **Páginas principales** (ejemplos):
+  - `Index`: Página de inicio/landing.
+  - `Auth`: Manejo de login y registro utilizando `supabase.auth`.
+  - `Dashboard`: Resumen de métricas y accesos rápidos a módulos clave.
+  - `Children`: Gestión de infantes.
+  - `Evaluations`: Registro y consulta de evaluaciones motrices.
+  - `Reports`: Generación y descarga de reportes.
+  - `Questionnaires`, `QuestionnaireManage`, `QuestionnaireEdit`, `QuestionnaireTake`, `QuestionnaireResult`: Gestión y aplicación de cuestionarios.
+
+- **Componentes de soporte**:
+  - Formularios, tablas y gráficos para la captura y visualización de información.
+  - Hooks personalizados para abstracción de la lógica de consultas a Supabase.
+
+### C.3 Arquitectura de Software (Backend con Supabase)
+
+El backend se apoya completamente en **Supabase**, que integra el motor de base de datos PostgreSQL, autenticación y funciones serverless:
+
+- **Cliente Supabase en el frontend**: definido en `src/integrations/supabase/client.ts`, donde se crea el cliente con la URL del proyecto y una llave publicable. Este cliente es consumido en las páginas y hooks para:
+  - Autenticación (`supabase.auth.signInWithPassword`, `supabase.auth.signUp`, gestión de sesiones).
+  - Operaciones CRUD sobre tablas (perfiles, infantes, evaluaciones, cuestionarios, respuestas, etc.).
+
+- **Autenticación y Autorización**:
+  - Supabase Auth gestiona usuarios, sesiones y recuperación de contraseñas.
+  - Las políticas RLS aplicadas en las tablas garantizan que cada evaluador solo visualice y modifique sus propios registros, mientras que los administradores tienen permisos ampliados.
+
+- **Edge Functions**:
+  - Permiten exponer endpoints serverless para ejecutar lógica de IA (por ejemplo, invocar modelos entrenados en Python/scikit-learn).
+  - Suelen recibir datos de evaluaciones y devolver clasificaciones o recomendaciones que luego se almacenan en la base de datos.
+
+### C.4 Flujos de Datos Principales
+
+1. **Autenticación de Usuario**
+   - El usuario accede a la vista `Auth`.
+   - Ingresa correo y contraseña.
+   - El frontend llama a `supabase.auth.signInWithPassword`.
+   - Supabase valida las credenciales y devuelve una sesión JWT.
+   - La sesión se persiste en `localStorage`, habilitando el acceso al resto de las rutas protegidas.
+
+2. **Gestión de Infantes**
+   - Desde la vista `Children`, el evaluador registra o edita datos del infante.
+   - El frontend envía los datos al backend mediante el cliente Supabase.
+   - Los registros se guardan en la tabla `children` asociados al evaluador (vía `user_id`).
+
+3. **Evaluación Motriz**
+   - El evaluador selecciona un infante y accede a `Evaluations`.
+   - Captura las puntuaciones de las 8 actividades, observaciones y metadatos de la sesión.
+   - El frontend valida la información y la envía a la tabla `evaluations`.
+   - Opcionalmente, se dispara una llamada a una Edge Function o proceso de IA que calcula el nivel de desarrollo y genera recomendaciones, las cuales se registran en `ai_results`.
+
+4. **Aplicación de Cuestionarios**
+   - Desde `Questionnaires` o vistas relacionadas, se selecciona el instrumento (Cornell, CHAEA, TAM) y se aplica al infante.
+   - Las respuestas se guardan en `questionnaire_responses` y se vinculan con `questionnaires`, `questionnaire_dimensions` y `questionnaire_questions`.
+   - La lógica de cálculo de resultados genera perfiles de estilos de aprendizaje o variables latentes según el cuestionario.
+
+5. **Generación de Reportes**
+   - El usuario accede al módulo de reportes.
+   - El sistema consulta evaluaciones, cuestionarios y resultados de IA.
+   - Se construyen reportes PDF o exportaciones a Excel con gráficos y tablas.
+   - Estos archivos se presentan para descarga directa desde el navegador.
+
+6. **Seguimiento Longitudinal y Dashboard**
+   - Mediante consultas agregadas a las tablas de evaluaciones y cuestionarios, el sistema genera gráficas de progreso y comparaciones por periodos.
+   - Los resultados se visualizan en el `Dashboard` y en vistas especializadas.
+
+### C.5 Esquema de Base de Datos
+
+La base de datos se diseña siguiendo un modelo relacional normalizado en PostgreSQL. Las entidades principales son:
+
+1. **profiles**  
+   Contiene información de los evaluadores registrados (nombre, correo, rol, metadatos de perfil).
+
+2. **children**  
+   Registra los datos de los infantes: identificadores, datos demográficos básicos y vínculos con el evaluador responsable.
+
+3. **evaluations**  
+   Almacena las evaluaciones motrices, incluyendo:
+   - Referencia al infante y al evaluador.
+   - Puntuaciones de cada una de las 8 actividades.
+   - Observaciones cualitativas.
+   - Fecha y contexto de la evaluación.
+
+4. **ai_results**  
+   Guarda los resultados de los modelos de IA asociados a una evaluación determinada:
+   - Nivel de desarrollo (Alto, Medio, Bajo).
+   - Recomendaciones generadas.
+   - Metadatos del modelo utilizado (versión, fecha de inferencia, métricas relevantes).
+
+5. **questionnaires**  
+   Catálogo de cuestionarios (Cornell, CHAEA, TAM, etc.), con información sobre nombre, descripción y tipo.
+
+6. **questionnaire_dimensions**  
+   Define las dimensiones o factores evaluados por cada cuestionario (por ejemplo, estilos de aprendizaje activo, reflexivo, teórico y pragmático en CHAEA).
+
+7. **questionnaire_questions**  
+   Tabla de preguntas, vinculada con `questionnaires` y, en algunos casos, con `questionnaire_dimensions`.
+
+8. **questionnaire_responses**  
+   Almacena las respuestas individuales de cada infante a los distintos cuestionarios, permitiendo cálculos de puntuaciones por dimensión y generación de reportes.
+
+9. **ai_training_models**  
+   Registra información sobre modelos de IA entrenados (tipo de algoritmo, hiperparámetros, métricas de validación), lo que facilita la trazabilidad y mejora continua.
+
+10. **user_roles**  
+    Tabla de soporte para el sistema de roles (Evaluator, Admin) y sus permisos asociados.
+
+11. **deleted_children**  
+    Implementa una "papelera de reciclaje" que permite recuperar registros de infantes eliminados antes de su borrado permanente.
+
+Todas estas tablas se encuentran protegidas por políticas de **Row Level Security (RLS)**, que restringen el acceso a los datos en función del usuario autenticado y su rol en el sistema.
+
+### C.7 Diagramas UML del Sistema
+
+Como complemento a la descripción textual de la arquitectura, se han elaborado varios diagramas UML en formato **PlantUML** que permiten visualizar de forma sintética la estructura y los flujos principales del sistema. El código fuente de los diagramas se encuentra en:
+
+- `docs/diagramas/`
+
+Y sus imágenes generadas (formato **PNG**) se ubican en:
+
+- `out/docs/diagramas/`
+
+Los diagramas principales son:
+
+1. **Diagrama de Componentes / Arquitectura General**  
+   ![Diagrama de Componentes / Arquitectura General](../out/docs/diagramas/arquitectura_sistema_v2/arquitectura_sistema_v2.png)  
+   Representa la relación entre la SPA desarrollada en React, el servicio de hosting (por ejemplo, Netlify) y los componentes provistos por Supabase (Auth, API REST/Realtime, Edge Functions y base de datos PostgreSQL). Este diagrama es útil para explicar, a nivel alto, cómo se distribuyen los componentes en la nube y cómo interactúan los actores principales (evaluador y administrador) con el sistema.
+
+2. **Diagrama de Entidad–Relación / Modelo de Datos**  
+   ![Diagrama de Entidad–Relación / Modelo de Datos](../out/docs/diagramas/modelo_datos_v2/modelo_datos_v2.png)  
+   Resume las tablas más relevantes utilizadas por el sistema (por ejemplo, `profiles`, `children`, `evaluations`, `ai_results`, `questionnaires`, `questions`, `questionnaire_results`, `questionnaire_answers`) y sus relaciones principales (llaves primarias y foráneas). Este diagrama complementa la sección **C.5 Esquema de Base de Datos**, sirviendo como apoyo visual para comprender la estructura relacional implementada en Supabase.
+
+3. **Diagrama de Secuencia de Evaluación Motriz con IA**  
+   ![Diagrama de Secuencia de Evaluación Motriz con IA](../out/docs/diagramas/flujo_evaluacion_motriz_v2/flujo_evaluacion_motriz_v2.png)  
+   Describe el flujo típico de una evaluación motriz: autenticación del evaluador, captura de las puntuaciones de las ocho actividades, registro en la tabla `evaluations`, invocación de una Edge Function de IA, almacenamiento del resultado en `ai_results` y presentación del reporte al usuario. Este diagrama facilita la explicación del rol de la capa de IA dentro del flujo operativo.
+
+El código fuente completo del sistema **SEEDU Motor Fine** se encuentra gestionado mediante un sistema de control de versiones distribuido (Git). El repositorio oficial del proyecto es el siguiente:
+
+- Repositorio GitHub: <https://github.com/LutherShadow/SEEDUMOTORFINE.git>
+
+En dicho repositorio se incluye:
+
+- Código del frontend desarrollado con React, TypeScript y Vite.
+- Configuración e integración con Supabase (cliente, tipos y scripts asociados a la base de datos).
+- Archivos de configuración de dependencias y scripts de construcción/despliegue.
+- Documentación técnica complementaria y recursos de apoyo para desarrolladores.
+
+Este repositorio sirve como referencia para futuras extensiones, mantenimiento evolutivo y posibles colaboraciones con otros equipos de desarrollo o instituciones educativas interesadas.
 
 ---
 

@@ -1,0 +1,38 @@
+@startuml
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam monochrome true
+
+actor "Evaluador" as Evaluador
+actor "Administrador" as Admin
+
+node "Navegador Web" {
+  component "SPA React\n(Frontend)" as Frontend
+}
+
+node "Netlify" {
+  component "Hosting Frontend" as Hosting
+}
+
+node "Supabase" {
+  database "PostgreSQL\n(Base de datos)" as DB
+  component "Supabase Auth" as Auth
+  component "REST / Realtime API" as API
+  component "Edge Functions\n(IA y lógica avanzada)" as Edge
+}
+
+Evaluador -- Frontend
+Admin -- Frontend
+
+Frontend -- Hosting
+Hosting -- API : HTTPS
+Frontend -- Auth : Auth SDK
+Frontend -- API : CRUD evaluaciones / cuestionarios
+Frontend --> Edge : Invocación funciones IA
+
+API -- DB
+Edge -- DB
+Auth -- DB
+
+@enduml

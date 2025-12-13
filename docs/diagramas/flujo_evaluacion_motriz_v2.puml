@@ -1,0 +1,33 @@
+@startuml
+
+skinparam sequenceArrowThickness 1
+skinparam monochrome true
+
+actor "Evaluador" as Evaluador
+participant "SPA React" as SPA
+participant "Supabase Auth" as Auth
+participant "Supabase API" as API
+participant "Edge Function IA" as Edge
+participant "DB PostgreSQL" as DB
+
+Evaluador -> SPA : Inicia sesión (correo, contraseña)
+SPA -> Auth : signInWithPassword()
+Auth --> SPA : Sesión válida (JWT)
+SPA --> Evaluador : Acceso a módulo de Evaluaciones
+
+Evaluador -> SPA : Selecciona infante y captura puntuaciones
+SPA -> API : INSERT INTO evaluations
+API -> DB : Guarda evaluación
+DB --> API : OK
+API --> SPA : Confirmación
+
+SPA -> Edge : invocar función IA (datos evaluación)
+Edge -> DB : Leer evaluación
+Edge --> SPA : Nivel de desarrollo + recomendaciones
+SPA -> API : INSERT INTO ai_results
+API -> DB : Guarda resultados IA
+DB --> API : OK
+
+SPA --> Evaluador : Muestra reporte de evaluación
+
+@enduml
