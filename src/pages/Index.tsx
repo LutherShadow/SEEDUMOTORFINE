@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Brain, Users, BarChart, ClipboardList } from "lucide-react";
 import { Suspense, lazy } from "react";
@@ -10,10 +9,12 @@ const Index = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        navigate("/dashboard");
-      }
+    import("@/integrations/supabase/client").then(({ supabase }) => {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          navigate("/dashboard");
+        }
+      });
     });
   }, [navigate]);
 
@@ -29,6 +30,8 @@ const Index = () => {
               src="/logo.svg"
               alt="Seedumotorfine - Análisis Motriz IA"
               className="h-48 w-auto object-contain"
+              width="192"
+              height="192"
             />
           </div>
           <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
