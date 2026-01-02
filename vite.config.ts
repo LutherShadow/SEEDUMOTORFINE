@@ -36,7 +36,7 @@ export default defineConfig({
             if (id.includes('framer-motion')) {
               return 'vendor_motion';
             }
-            if (id.includes('react-joyride')) {
+            if (id.includes('react-joyride') || id.includes('react-floater') || id.includes('popper.js')) {
               return 'vendor_tour';
             }
             if (id.includes('@supabase')) {
