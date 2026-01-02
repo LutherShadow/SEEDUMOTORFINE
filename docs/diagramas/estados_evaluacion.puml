@@ -1,0 +1,8 @@
+@startuml
+[*] --> Borrador : Crear Evaluación
+Borrador --> EnProgreso : Registrar Puntuaciones
+EnProgreso --> EnProgreso : Guardar Parcialmente
+EnProgreso --> Completada : Finalizar Captura
+Completada --> Analizada : Procesar con IA
+Analizada --> [*] : Generar Reporte
+@enduml

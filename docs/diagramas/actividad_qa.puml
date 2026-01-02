@@ -1,0 +1,20 @@
+@startuml
+start
+:Desplegar versión candidata (Staging);
+partition "User Acceptance Testing (UAT)" {
+  :Docentes realizan evaluaciones de prueba;
+  :Verificación de cálculos y reportes;
+}
+if (¿Se detectaron errores/bugs?) then (Sí)
+  :Reportar Issue en GitHub;
+  :Desarrollar Fix;
+  :Redesplegar;
+  detach
+else (No)
+  :Aprobación Final;
+  :Merge a rama 'main';
+  :Despliegue Automático Producción;
+  :Capacitación Final Usuarios;
+endif
+stop
+@enduml

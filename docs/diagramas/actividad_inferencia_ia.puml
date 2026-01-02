@@ -1,0 +1,15 @@
+@startuml
+|Cliente (React)|
+start
+:Enviar Puntuaciones [p1..p8];
+|Edge Function (Deno)|
+:Recibir Payload JSON;
+:Cargar Modelo (Random Forest);
+:Predecir Clase;
+:Calcular Probabilidad;
+:Retornar JSON {clase, confianza};
+|Cliente (React)|
+:Recibir Resultado;
+:Mostrar Recomendación Pedagógica;
+stop
+@enduml

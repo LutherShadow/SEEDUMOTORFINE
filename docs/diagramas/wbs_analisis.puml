@@ -1,0 +1,15 @@
+@startwbs
+* SEEDU Motor Fine
+** Módulo Gestión
+*** Perfiles Docentes
+*** Expedientes Niños
+** Módulo Evaluación
+*** 8 Pruebas Motrices
+*** Cuestionarios (Cornell, etc)
+** Módulo IA
+*** Dataset Histórico
+*** Modelo Random Forest
+** Módulo Reportes
+*** PDF Generator
+*** Dashboard
+@endwbs

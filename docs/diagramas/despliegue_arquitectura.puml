@@ -1,0 +1,22 @@
+@startuml
+node "Cliente" {
+  [Navegador Web] as Browser
+}
+
+cloud "Netlify Cloud" {
+  [Frontend React] as CDN
+}
+
+cloud "Supabase Cloud" {
+  database "PostgreSQL DB" as DB
+  node "Edge Functions" as Edge
+  [Auth Service] as Auth
+}
+
+Browser --> CDN : HTTPS
+Browser --> Auth : JWT Auth
+Browser --> DB : REST / Realtime
+Browser --> Edge : Invoke Inference
+
+Edge ..> DB : Read/Write
+@enduml

@@ -1,0 +1,14 @@
+@startuml
+start
+:Docente selecciona Infante desde la lista;
+:Inicia Nueva Evaluación Motriz;
+repeat
+  :Muestra Actividad (Instrucciones y Materiales);
+  :Docente observa desempeño;
+  :Docente registra puntuación (0-10) y observaciones;
+repeat while (¿Hay actividades pendientes?) is (Sí)
+->No;
+:Validar completitud del formulario;
+:Guardar Evaluación en Base de Datos;
+stop
+@enduml

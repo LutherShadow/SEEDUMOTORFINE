@@ -1,0 +1,13 @@
+@startuml
+actor Administrador
+rectangle "Módulo Administrativo" {
+  usecase "Dar de alta Docente" as UC1
+  usecase "Asignar Grupo" as UC2
+  usecase "Ver Métricas Globales" as UC3
+  usecase "Gestionar Periodos Escolares" as UC4
+}
+Administrador --> UC1
+Administrador --> UC2
+Administrador --> UC3
+Administrador --> UC4
+@enduml

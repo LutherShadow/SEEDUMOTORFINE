@@ -1,0 +1,25 @@
+@startuml
+package "Seguridad y Acceso" {
+  [Gestión de Perfiles]
+  [Autenticación (RBAC)]
+}
+
+package "Núcleo Educativo" {
+  [Gestión de Expedientes]
+  [Seguimiento Longitudinal]
+}
+
+package "Evaluación" {
+  [Pruebas Motrices]
+  [Cuestionarios Psicopedagógicos]
+}
+
+package "Inteligencia Artificial" {
+  [Preprocesamiento]
+  [Motor de Inferencia (Random Forest)]
+}
+
+[Seguridad y Acceso] ..> [Núcleo Educativo] : Protege
+[Núcleo Educativo] --> [Evaluación] : Organiza
+[Evaluación] --> [Inteligencia Artificial] : Alimenta datos
+@enduml

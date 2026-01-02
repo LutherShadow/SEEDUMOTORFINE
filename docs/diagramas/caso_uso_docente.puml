@@ -1,0 +1,13 @@
+@startuml
+actor Docente
+rectangle "Gestión de Expedientes" {
+  usecase "Registrar Nuevo Infante" as UC_Create
+  usecase "Actualizar Datos Personales" as UC_Update
+  usecase "Consultar Expediente Completo" as UC_Read
+  usecase "Dar de Baja (Soft Delete)" as UC_Delete
+}
+Docente --> UC_Create
+Docente --> UC_Update
+Docente --> UC_Read
+Docente --> UC_Delete
+@enduml

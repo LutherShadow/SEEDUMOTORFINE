@@ -1,0 +1,23 @@
+@startuml TiempoEvaluacion
+title Comparativa de Tiempo: Evaluación Manual vs Digital
+
+skinparam backgroundColor white
+skinparam padding 5
+skinparam defaultTextAlignment center
+
+caption Figura 4.15. Reducción del 40% en tiempos operativos (Fuente: Elaboración propia).
+
+top to bottom direction
+
+rectangle "Manual (Papel)\n<size:18><b>25 min</b></size>" as Manual #FFCDD2
+rectangle "Digital (SEEDU)\n<size:18><b>15 min</b></size>" as Digital #C8E6C9
+
+Manual -[#red,thickness=3]-> Digital : <color:red><b>-40% Reducción</b></color>
+
+note right of Digital
+  n = 1,873 evaluaciones
+  Ahorro por infante: 10 min
+  Ahorro total: ~312 horas
+end note
+
+@enduml

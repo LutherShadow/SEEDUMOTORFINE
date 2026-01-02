@@ -1,0 +1,38 @@
+@startuml
+left to right direction
+actor "Administrador" as admin
+actor "Docente/Psicopedagogo" as docente
+
+package "Sistema SEEDU Motor Fine" {
+  usecase "Iniciar Sesión" as UC1
+  usecase "Gestionar Perfil" as UC2
+  
+  package "Módulo Administrativo" {
+    usecase "Gestionar Usuarios (Docentes)" as UC_Admin1
+    usecase "Ver Estadísticas Globales" as UC_Admin2
+    usecase "Configurar Períodos" as UC_Admin3
+  }
+
+  package "Módulo Docente" {
+    usecase "Gestionar Infantes" as UC_Doc1
+    usecase "Realizar Evaluación Motriz" as UC_Doc2
+    usecase "Aplicar Cuestionarios" as UC_Doc3
+    usecase "Generar Reportes" as UC_Doc4
+    usecase "Consultar Dashboard Grupo" as UC_Doc5
+  }
+}
+
+admin --> UC1
+admin --> UC2
+admin --> UC_Admin1
+admin --> UC_Admin2
+admin --> UC_Admin3
+
+docente --> UC1
+docente --> UC2
+docente --> UC_Doc1
+docente --> UC_Doc2
+docente --> UC_Doc3
+docente --> UC_Doc4
+docente --> UC_Doc5
+@enduml

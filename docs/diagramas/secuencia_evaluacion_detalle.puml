@@ -1,0 +1,31 @@
+@startuml
+actor Docente
+participant "Frontend (React)" as UI
+participant "Backend (Supabase)" as DB
+participant "IA Service (Edge Function)" as AI
+
+Docente -> UI: Iniciar Evaluación Motriz
+activate UI
+UI --> Docente: Mostrar Formulario (8 Actividades)
+Docente -> UI: Registrar Puntuaciones (0-10)
+UI -> UI: Validar Datos
+Docente -> UI: Guardar y Finalizar
+UI -> DB: Insertar Evaluación (Evaluaciones)
+activate DB
+DB --> UI: Confirmación ID
+deactivate DB
+
+UI -> AI: Solicitar Clasificación (puntuaciones)
+activate AI
+AI -> AI: Ejecutar Random Forest
+AI --> UI: Retornar Nivel (Alto/Medio/Bajo)
+deactivate AI
+
+UI -> DB: Actualizar Evaluación con Resultado IA
+activate DB
+DB --> UI: OK
+deactivate DB
+
+UI --> Docente: Mostrar Resultados y Recomendaciones
+deactivate UI
+@enduml

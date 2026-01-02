@@ -1,0 +1,18 @@
+@startuml
+actor Docente
+participant "Cliente Web" as Client
+participant "Base de Datos" as DB
+participant "Motor PDF" as PDF
+
+Docente -> Client: Clic en "Descargar Reporte"
+Client -> DB: Fetch(Datos Infante + Evaluaciones)
+activate DB
+DB --> Client: JSON Data
+deactivate DB
+Client -> PDF: Renderizar Documento (React-PDF)
+activate PDF
+PDF -> PDF: Compilar Gráficos y Tablas
+PDF --> Client: Blob PDF
+deactivate PDF
+Client --> Docente: Descarga Automática de Archivo
+@enduml

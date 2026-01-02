@@ -33,7 +33,7 @@ const Dashboard = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (!session?.user) {
         navigate("/auth");
       }
@@ -42,7 +42,7 @@ const Dashboard = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (!session?.user) {
         navigate("/auth");
       }
@@ -59,7 +59,7 @@ const Dashboard = () => {
 
   const checkAdminStatus = async () => {
     if (!user) return;
-    
+
     try {
       const { data, error } = await supabase
         .from("user_roles")
@@ -97,7 +97,7 @@ const Dashboard = () => {
       <header className="border-b bg-card shadow-soft">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="Seedumotorfine" className="h-10 w-auto" />
+            <img src="/logo.svg" alt="Seedumotorfine" className="h-10 w-auto" />
             <h1 className="text-2xl font-bold text-primary hidden sm:block">Sistema de Evaluación Motriz</h1>
           </div>
           <TooltipProvider>
@@ -142,7 +142,7 @@ const Dashboard = () => {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Card 
+                <Card
                   className="cursor-pointer transition-all hover:shadow-medium hover:-translate-y-1"
                   onClick={() => navigate("/children")}
                   data-tour="children-card"
@@ -171,7 +171,7 @@ const Dashboard = () => {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Card 
+                <Card
                   className="cursor-pointer transition-all hover:shadow-medium hover:-translate-y-1"
                   onClick={() => navigate("/evaluations")}
                   data-tour="evaluations-card"
@@ -200,7 +200,7 @@ const Dashboard = () => {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Card 
+                <Card
                   className="cursor-pointer transition-all hover:shadow-medium hover:-translate-y-1"
                   onClick={() => navigate("/reports")}
                   data-tour="reports-card"
@@ -229,7 +229,7 @@ const Dashboard = () => {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Card 
+                <Card
                   className="cursor-pointer transition-all hover:shadow-medium hover:-translate-y-1"
                   onClick={() => navigate("/questionnaires")}
                   data-tour="questionnaires-card"
@@ -260,7 +260,7 @@ const Dashboard = () => {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Card 
+                    <Card
                       className="cursor-pointer transition-all hover:shadow-medium hover:-translate-y-1"
                       onClick={() => navigate("/admin/training")}
                     >
@@ -288,7 +288,7 @@ const Dashboard = () => {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Card 
+                    <Card
                       className="cursor-pointer transition-all hover:shadow-medium hover:-translate-y-1"
                       onClick={() => navigate("/admin/report-settings")}
                     >

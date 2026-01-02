@@ -22,9 +22,9 @@ const Index = () => {
       <div className="container mx-auto px-4 py-16">
         <div className="text-center mb-16" data-tour="hero-section">
           <div className="flex justify-center mb-6">
-            <img 
-              src="/logo.png" 
-              alt="Seedumotorfine - Análisis Motriz IA" 
+            <img
+              src="/logo.svg"
+              alt="Seedumotorfine - Análisis Motriz IA"
               className="h-48 w-auto object-contain"
             />
           </div>
@@ -32,7 +32,7 @@ const Index = () => {
             Sistema de Evaluación Educativa
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-            Plataforma integral para evaluar el desarrollo motor fino, estilos de aprendizaje 
+            Plataforma integral para evaluar el desarrollo motor fino, estilos de aprendizaje
             y habilidades de estudio en aprendientes con herramientas especializadas
           </p>
           <div className="flex gap-4 justify-center" data-tour="login-button">
@@ -50,9 +50,9 @@ const Index = () => {
             <div className="p-3 bg-primary/10 rounded-lg w-fit mb-4">
               <Users className="h-6 w-6 text-primary" />
             </div>
-            <h3 className="text-xl font-semibold mb-2">Gestión de Alumnos</h3>
+            <h2 className="text-xl font-semibold mb-2">Gestión de Alumnos</h2>
             <p className="text-muted-foreground">
-              Administra registros de estudiantes con carga masiva y almacenamiento 
+              Administra registros de estudiantes con carga masiva y almacenamiento
               seguro en la nube
             </p>
           </div>
@@ -61,9 +61,9 @@ const Index = () => {
             <div className="p-3 bg-secondary/10 rounded-lg w-fit mb-4">
               <Brain className="h-6 w-6 text-secondary" />
             </div>
-            <h3 className="text-xl font-semibold mb-2">Evaluaciones Motrices</h3>
+            <h2 className="text-xl font-semibold mb-2">Evaluaciones Motrices</h2>
             <p className="text-muted-foreground">
-              Evaluación del desarrollo motor fino con IA que clasifica 
+              Evaluación del desarrollo motor fino con IA que clasifica
               en niveles bajo, medio y alto
             </p>
           </div>
@@ -72,9 +72,9 @@ const Index = () => {
             <div className="p-3 bg-accent/10 rounded-lg w-fit mb-4">
               <ClipboardList className="h-6 w-6 text-accent" />
             </div>
-            <h3 className="text-xl font-semibold mb-2">Cuestionarios</h3>
+            <h2 className="text-xl font-semibold mb-2">Cuestionarios</h2>
             <p className="text-muted-foreground">
-              Cornell, CHAEA y TAM para evaluar estilos de aprendizaje 
+              Cornell, CHAEA y TAM para evaluar estilos de aprendizaje
               y habilidades de estudio
             </p>
           </div>
@@ -83,9 +83,9 @@ const Index = () => {
             <div className="p-3 bg-accent/10 rounded-lg w-fit mb-4">
               <BarChart className="h-6 w-6 text-accent" />
             </div>
-            <h3 className="text-xl font-semibold mb-2">Reportes Detallados</h3>
+            <h2 className="text-xl font-semibold mb-2">Reportes Detallados</h2>
             <p className="text-muted-foreground">
-              Informes automáticos con recomendaciones educativas 
+              Informes automáticos con recomendaciones educativas
               y análisis completo
             </p>
           </div>

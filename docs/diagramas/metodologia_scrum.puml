@@ -1,0 +1,39 @@
+@startuml
+title Adaptación de Metodología Scrum - SEEDU Motor Fine
+
+skinparam backgroundColor white
+skinparam activity {
+  BackgroundColor<<Artefacto>> LightYellow
+  BorderColor<<Artefacto>> Gold
+}
+
+start
+
+:Product Backlog\n(Historias de Usuario);
+
+partition "Sprint (2 Semanas)" {
+    :Sprint Planning\n(Selección de Tareas);
+    
+    :Sprint Backlog\n(Tareas del Sprint)<<Artefacto>>;
+    
+    repeat
+        partition "Ejecución / Desarrollo" {
+            :Desarrollo de Funcionalidades\n(Frontend / Backend / IA);
+            
+            :Daily Standup\n(Auto-seguimiento y Bloqueos);
+        }
+    repeat while (¿Fin del Sprint?) is (No)
+    ->Sí;
+    
+    :Sprint Review\n(Validación con Asesor Académico);
+    
+    :Sprint Retrospective\n(Mejora Continua);
+}
+
+:Incremento de Software\n(Funcionalidad Desplegada)<<Artefacto>>;
+
+stop
+
+center footer Figura 3.1. Adaptación de la metodología Scrum (Basado en Schwaber & Sutherland, 2020).
+
+@enduml
