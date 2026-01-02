@@ -1,4 +1,4 @@
-import { jsPDF } from "jspdf";
+import type { jsPDF } from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
 import { getReportTypeTemplate, type ReportType } from "@/lib/reportTypeTemplates";
 
@@ -11,19 +11,26 @@ interface ReportData {
 }
 
 export class ReportPDFGenerator {
-    private doc: jsPDF;
+    private doc!: jsPDF;
     private settings: any;
-    private pageWidth: number;
-    private pageHeight: number;
+    private pageWidth: number = 210; // Default A4 width
+    private pageHeight: number = 297; // Default A4 height
     private margin: number = 15;
     private logoImage?: string; // dataURL del logo principal
     private logoAspectRatio?: number; // width / height para no deformar
     private footerLogoImages: string[] = []; // dataURLs de logos de pie de página
 
     constructor() {
-        this.doc = new jsPDF();
-        this.pageWidth = this.doc.internal.pageSize.getWidth();
-        this.pageHeight = this.doc.internal.pageSize.getHeight();
+        // Initialization moved to ensureDoc() to allow dynamic import of jsPDF
+    }
+
+    private async ensureDoc(): Promise<void> {
+        if (!this.doc) {
+            const { jsPDF } = await import("jspdf");
+            this.doc = new jsPDF();
+            this.pageWidth = this.doc.internal.pageSize.getWidth();
+            this.pageHeight = this.doc.internal.pageSize.getHeight();
+        }
     }
 
     private hexToRgb(hex: string): { r: number; g: number; b: number } {
@@ -554,6 +561,7 @@ export class ReportPDFGenerator {
     }
 
     async generatePDF(reportData: ReportData): Promise<void> {
+        await this.ensureDoc();
         await this.loadSettings(reportData.reportType);
 
         // Cargar logo (si existe) antes de construir las páginas
