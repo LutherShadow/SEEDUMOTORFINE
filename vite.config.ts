@@ -30,33 +30,16 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom') || id.includes('scheduler')) {
-              return 'vendor_core';
-            }
+            // Isolate large chart and pdf libraries
             if (id.includes('recharts') || id.includes('jspdf') || id.includes('xlsx')) {
               return 'vendor_heavy';
             }
-            if (id.includes('framer-motion')) {
-              return 'vendor_motion';
-            }
-            if (id.includes('react-joyride') || id.includes('react-floater') || id.includes('popper.js')) {
-              return 'vendor_tour';
-            }
+            // Isolate Supabase client
             if (id.includes('@supabase')) {
               return 'vendor_db';
             }
-            if (id.includes('react-hook-form') || id.includes('zod') || id.includes('@hookform')) {
-              return 'vendor_forms';
-            }
-            if (id.includes('@tanstack')) {
-              return 'vendor_data';
-            }
-            if (id.includes('@radix-ui') || id.includes('lucide-react') || id.includes('cmdk') || id.includes('vaul') || id.includes('sonner') || id.includes('input-otp')) {
-              return 'vendor_ui';
-            }
-            if (id.includes('date-fns')) {
-              return 'vendor_utils';
-            }
+            // Keep everything else in the default vendor chunk to prevent circular dependency issues
+            // (e.g. Radix UI depending on React in a way that breaks with aggressive splitting)
             return 'vendor';
           }
         }
