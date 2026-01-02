@@ -36,6 +36,15 @@ export default defineConfig({
             if (id.includes('framer-motion')) {
               return 'vendor_motion';
             }
+            if (id.includes('react-joyride')) {
+              return 'vendor_tour';
+            }
+            if (id.includes('@supabase')) {
+              return 'vendor_db';
+            }
+            if (id.includes('@tanstack')) {
+              return 'vendor_data';
+            }
             if (id.includes('@radix-ui') || id.includes('lucide-react')) {
               return 'vendor_ui';
             }

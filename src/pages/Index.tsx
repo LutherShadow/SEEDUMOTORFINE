@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Brain, Users, BarChart, ClipboardList } from "lucide-react";
-import { WelcomeTour } from "@/components/tutorial/WelcomeTour";
+import { Suspense, lazy } from "react";
+const WelcomeTour = lazy(() => import("@/components/tutorial/WelcomeTour").then(module => ({ default: module.WelcomeTour })));
 
 const Index = () => {
   const navigate = useNavigate();
@@ -18,7 +19,9 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted to-background">
-      <WelcomeTour />
+      <Suspense fallback={null}>
+        <WelcomeTour />
+      </Suspense>
       <div className="container mx-auto px-4 py-16">
         <div className="text-center mb-16" data-tour="hero-section">
           <div className="flex justify-center mb-6">
