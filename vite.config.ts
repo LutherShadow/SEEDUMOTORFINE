@@ -30,10 +30,13 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            if (id.includes('lucide-react') || id.includes('recharts') || id.includes('jspdf') || id.includes('xlsx')) {
+            if (id.includes('recharts') || id.includes('jspdf') || id.includes('xlsx')) {
               return 'vendor_heavy';
             }
-            if (id.includes('@radix-ui') || id.includes('framer-motion')) {
+            if (id.includes('framer-motion')) {
+              return 'vendor_motion';
+            }
+            if (id.includes('@radix-ui') || id.includes('lucide-react')) {
               return 'vendor_ui';
             }
             return 'vendor';
