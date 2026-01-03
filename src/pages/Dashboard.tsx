@@ -107,7 +107,7 @@ const Dashboard = () => {
               </div>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={() => navigate("/profile")} data-tour="profile-button">
+                  <Button variant="ghost" size="icon" onClick={() => navigate("/profile")} data-tour="profile-button" aria-label="Mi Perfil">
                     <UserCircle className="h-5 w-5" />
                   </Button>
                 </TooltipTrigger>
@@ -117,7 +117,7 @@ const Dashboard = () => {
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={handleLogout} data-tutorial="logout-btn">
+                  <Button variant="ghost" size="icon" onClick={handleLogout} data-tutorial="logout-btn" aria-label="Cerrar sesión">
                     <LogOut className="h-5 w-5" />
                   </Button>
                 </TooltipTrigger>

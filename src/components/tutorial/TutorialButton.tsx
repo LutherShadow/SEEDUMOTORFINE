@@ -21,6 +21,7 @@ export const TutorialButton: React.FC<TutorialButtonProps> = ({ onClick }) => {
             size="icon"
             onClick={onClick}
             className="fixed bottom-6 right-6 z-50 h-12 w-12 rounded-full shadow-lg"
+            aria-label="Iniciar tutorial"
           >
             <HelpCircle className="h-5 w-5" />
           </Button>
