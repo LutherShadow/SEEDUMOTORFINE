@@ -31,8 +31,14 @@ export default defineConfig({
         manualChunks(id) {
           if (id.includes('node_modules')) {
             // Isolate large chart and pdf libraries
-            if (id.includes('recharts') || id.includes('jspdf') || id.includes('xlsx')) {
-              return 'vendor_heavy';
+            if (id.includes('recharts')) {
+              return 'vendor_charts';
+            }
+            if (id.includes('jspdf')) {
+              return 'vendor_pdf';
+            }
+            if (id.includes('xlsx')) {
+              return 'vendor_excel';
             }
             // Isolate Supabase client
             if (id.includes('@supabase')) {
