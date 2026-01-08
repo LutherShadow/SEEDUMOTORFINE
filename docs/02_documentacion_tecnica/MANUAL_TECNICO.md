@@ -216,11 +216,11 @@ Recomendaciones de seguridad:
 
 ### 4.1 Arquitectura del Sistema
 
-![Arquitectura del Sistema](../out/docs/diagramas/arquitectura_sistema/Arquitectura%20del%20Sistema.png)
+![Arquitectura del Sistema](../../out/docs/diagramas/arquitectura_sistema/Arquitectura%20del%20Sistema.png)
 
 ### 4.2 Modelo de Datos
 
-![Modelo de Datos](../out/docs/diagramas/modelo_datos/Modelo%20de%20Datos.png)
+![Modelo de Datos](../../out/docs/diagramas/modelo_datos/Modelo%20de%20Datos.png)
 
 **Nota:** Para visualizar estos diagramas, necesitarás un renderizador de PlantUML. Puedes usar extensiones de VS Code como "PlantUML" o servicios en línea como PlantUML Web Server.
 

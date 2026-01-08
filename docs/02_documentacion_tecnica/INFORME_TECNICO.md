@@ -277,11 +277,11 @@ El sistema se fundamenta en un análisis detallado de las interacciones usuario-
 Estos casos de uso no solo describen funcionalidades, sino que reflejan un flujo de trabajo optimizado, cumpliendo con el principio de que "el modelado de requisitos proporciona el mecanismo técnico sólido para comprender, analizar y negociar las necesidades del usuario" (**Pressman & Maxim, 2020**).
 
 **Figura 2.1.** *Diagrama Conceptual de Módulos (Paquetes)*
-![Diagrama de Paquetes](../out/docs/diagramas/paquetes_modulos/paquetes_modulos.png)
+![Diagrama de Paquetes](../../out/docs/diagramas/paquetes_modulos/paquetes_modulos.png)
 *Nota.* Arquitectura lógica de la organización del código.
 
 **Figura 2.2.** *Diagrama de Estados: Ciclo de Vida de una Evaluación*
-![Diagrama de Estados](../out/docs/diagramas/estados_evaluacion/estados_evaluacion.png)
+![Diagrama de Estados](../../out/docs/diagramas/estados_evaluacion/estados_evaluacion.png)
 *Nota.* Modelado del ciclo de vida de la entidad de evaluación.
 
 ### Desarrollo Motriz Fino en la Etapa Preescolar
@@ -366,7 +366,7 @@ La metodología de trabajo seleccionada se fundamenta en **Scrum**, un marco de 
 A diferencia de un equipo Scrum tradicional, los roles de *Product Owner*, *Scrum Master* y *Development Team* fueron asumidos de manera rotativa y consolidada por el residente, con validaciones periódicas (Sprint Reviews) con el asesor externo.
 
 **Figura 3.1.** *Adaptación de la metodología Scrum para el proyecto*
-![Metodología Scrum Adaptada](../out/docs/diagramas/metodologia_scrum/metodologia_scrum.png)
+![Metodología Scrum Adaptada](../../out/docs/diagramas/metodologia_scrum/metodologia_scrum.png)
 *Nota.* Basado en Schwaber & Sutherland (2020).
 
 **Justificación de la Adaptación:**
@@ -392,7 +392,7 @@ Se establecieron sprints quincenales estructurados en:
 Estructura jerárquica de los requerimientos identificados durante la fase de análisis:
 
 **Figura 3.2.** *Diagrama de Desglose de Trabajo*
-![WBS Análisis](../out/docs/diagramas/wbs_analisis/wbs_analisis.png)
+![WBS Análisis](../../out/docs/diagramas/wbs_analisis/wbs_analisis.png)
 *Nota.* Desglose jerárquico de tareas del proyecto.
 
 #### Fase 2: Diseño de Arquitectura y Base de Datos (Semanas 3-4)
@@ -406,7 +406,7 @@ Estructura jerárquica de los requerimientos identificados durante la fase de an
 **Diagrama de Despliegue (Arquitectura Física)**
 
 **Figura 3.3.** *Diagrama de Despliegue*
-![Arquitectura Física](../out/docs/diagramas/despliegue_arquitectura/despliegue_arquitectura.png)
+![Arquitectura Física](../../out/docs/diagramas/despliegue_arquitectura/despliegue_arquitectura.png)
 *Nota.* Diagrama de distribución de componentes en la nube.
 
 #### 3.1.3 Estructura de Base de Datos
@@ -431,7 +431,7 @@ El núcleo del sistema reside en un esquema relacional optimizado en PostgreSQL.
 **Diagrama de Actividad: Flujo de Evaluación (Fase MVP)**
 
 **Figura 3.4.** *Flujo de Evaluación MVP*
-![Actividad Evaluación MVP](../out/docs/diagramas/actividad_evaluacion_mvp/actividad_evaluacion_mvp.png)
+![Actividad Evaluación MVP](../../out/docs/diagramas/actividad_evaluacion_mvp/actividad_evaluacion_mvp.png)
 *Nota.* Flujo funcional de la primera iteración (MVP).
 
 #### Fase 4: Integración de Modelos de IA (Semanas 9-11)
@@ -446,7 +446,7 @@ El núcleo del sistema reside en un esquema relacional optimizado en PostgreSQL.
 **Diagrama de Actividad: Inferencia de IA**
 
 **Figura 3.5.** *Proceso de Inferencia de IA*
-![Inferencia IA](../out/docs/diagramas/actividad_inferencia_ia/actividad_inferencia_ia.png)
+![Inferencia IA](../../out/docs/diagramas/actividad_inferencia_ia/actividad_inferencia_ia.png)
 *Nota.* Representación del flujo de datos en el modelo predictivo.
 
 #### Fase 5: Módulos Complementarios y Reportes (Semanas 12-14)
@@ -460,7 +460,7 @@ El núcleo del sistema reside en un esquema relacional optimizado en PostgreSQL.
 **Diagrama de Secuencia: Generación de Reportes (Fase 5)**
 
 **Figura 3.6.** *Secuencia de Generación de Reportes*
-![Secuencia Reportes](../out/docs/diagramas/secuencia_reportes/secuencia_reportes.png)
+![Secuencia Reportes](../../out/docs/diagramas/secuencia_reportes/secuencia_reportes.png)
 *Nota.* Interacción de componentes para la generación de documentos.
 
 #### Fase 6: Pruebas, Despliegue y Capacitación (Semanas 15-16)
@@ -474,7 +474,7 @@ El núcleo del sistema reside en un esquema relacional optimizado en PostgreSQL.
 **Diagrama de Actividad: Flujo de Pruebas y Aseguramiento de Calidad (QA)**
 
 **Figura 3.7.** *Flujo de Aseguramiento de Calidad*
-![Actividad QA](../out/docs/diagramas/actividad_qa/actividad_qa.png)
+![Actividad QA](../../out/docs/diagramas/actividad_qa/actividad_qa.png)
 *Nota.* Procedimiento de pruebas y validación.
 
 ## 3.2 Herramientas Web y Entorno de Desarrollo
@@ -503,7 +503,7 @@ La arquitectura está diseñada para ser escalable y modular.
 
 **Diagrama de Arquitectura Global:**
 **Figura 4.1.** *Arquitectura del Sistema*
-![Arquitectura del Sistema](../out/docs/diagramas/arquitectura_sistema/Arquitectura%20del%20Sistema.png)
+![Arquitectura del Sistema](../../out/docs/diagramas/arquitectura_sistema/Arquitectura%20del%20Sistema.png)
 *Nota.* Diseño estructural de la solución tecnológica.
 
 ### Modelo de Datos (ERD)
@@ -512,7 +512,7 @@ El modelo de datos relacional en PostgreSQL fue diseñado para garantizar la int
 
 **Modelo de Datos (ERD):**
 **Figura 4.2.** *Modelo de Datos Entidad-Relación*
-![Modelo de Datos](../out/docs/diagramas/modelo_datos/Modelo%20de%20Datos.png)
+![Modelo de Datos](../../out/docs/diagramas/modelo_datos/Modelo%20de%20Datos.png)
 *Nota.* Esquema de la base de datos relacional.
 
 ### Modelado de Casos de Uso (PlantUML)
@@ -523,26 +523,26 @@ A continuación se detallan los diagramas de casos de uso para los actores princ
 El administrador es responsable de la configuración inicial y el mantenimiento de la estructura de usuarios.
 
 **Figura 4.3.** *Caso de Uso: Módulo Administrativo*
-![Caso de Uso Admin](../out/docs/diagramas/caso_uso_admin/caso_uso_admin.png)
+![Caso de Uso Admin](../../out/docs/diagramas/caso_uso_admin/caso_uso_admin.png)
 *Nota.* Especificación de funciones para el rol de Administrador.
 
 **B. Gestión de Infantes (Docente)**
 El docente interactúa diariamente con el módulo de gestión de expedientes para mantener actualizada la información de su grupo.
 
 **Figura 4.4.** *Caso de Uso: Gestión Docente*
-![Caso de Uso Docente](../out/docs/diagramas/caso_uso_docente/caso_uso_docente.png)
+![Caso de Uso Docente](../../out/docs/diagramas/caso_uso_docente/caso_uso_docente.png)
 *Nota.* Especificación de funciones para el rol Docente.
 
 **C. Diagrama General de Actores y Casos de Uso**
 
 **Figura 4.5.** *Diagrama General de Actores*
-![Caso de Uso General](../out/docs/diagramas/caso_uso_general/caso_uso_general.png)
+![Caso de Uso General](../../out/docs/diagramas/caso_uso_general/caso_uso_general.png)
 *Nota.* Vista global de interacciones del sistema.
 
 **Detalle: Proceso de Evaluación Motriz**
 
 **Figura 4.6.** *Detalle del Proceso de Evaluación*
-![Secuencia Detalle Evaluación](../out/docs/diagramas/secuencia_evaluacion_detalle/secuencia_evaluacion_detalle.png)
+![Secuencia Detalle Evaluación](../../out/docs/diagramas/secuencia_evaluacion_detalle/secuencia_evaluacion_detalle.png)
 *Nota.* Diagrama de secuencia del proceso evaluativo.
 
 ## 4.3 Prototipos e Interfaces
@@ -554,37 +554,37 @@ El sistema cuenta con una interfaz moderna y adaptativa (Responsive Web Design).
 **Pantalla de Inicio de Sesión:**
 Acceso seguro con autenticación cifrada.
 **Figura 4.7.** *Pantalla de Inicio de Sesión*
-![Inicio de Sesión](img/login_screen.png)
+![Inicio de Sesión](../05_imagenes/login_screen.png)
 *Nota.* Interfaz de autenticación del sistema.
 
 **Panel de Control (Dashboard):**
 Vista principal que ofrece métricas en tiempo real sobre la población evaluada y accesos rápidos a las funciones críticas.
 **Figura 4.8.** *Panel de Control Administrativo*
-![Dashboard Administrativo](img/dashboard_admin.png)
+![Dashboard Administrativo](../05_imagenes/dashboard_admin.png)
 *Nota.* Vista principal del panel administrativo.
 
 **Gestión de Infantes:**
 Módulo para el registro y administración de los expedientes de los niños, permitiendo búsquedas y filtrados dinámicos.
 **Figura 4.9.** *Módulo de Gestión de Infantes*
-![Lista de Infantes](img/lista_ninos.png)
+![Lista de Infantes](../05_imagenes/lista_ninos.png)
 *Nota.* Interfaz de gestión de expedientes.
 
 **Formulario de Evaluación Motriz:**
 Interfaz intuitiva para el registro de puntuaciones en las 8 pruebas estandarizadas, con validación en tiempo real.
 **Figura 4.10.** *Formulario de Evaluación Motriz*
-![Formulario de Evaluación](img/evaluacion_form.png)
+![Formulario de Evaluación](../05_imagenes/evaluacion_form.png)
 *Nota.* Formulario digital de captura de datos.
 
 **Visualización de Resultados y Análisis IA:**
 Vista detallada con gráficos de radar y barras que muestran el desempeño del infante, junto con la clasificación y recomendaciones generadas por el modelo de IA.
 **Figura 4.11.** *Visualización de Resultados y Análisis*
-![Resultados de Evaluación](img/reporte_view.png)
+![Resultados de Evaluación](../05_imagenes/reporte_view.png)
 *Nota.* Visualización de resultados y predicciones.
 
 **Panel de Control (Perfil Evaluador):**
 Vista adaptada para el personal docente, centrada en sus grupos y evaluaciones asignadas.
 **Figura 4.12.** *Panel de Control del Evaluador*
-![Dashboard Evaluador](img/dashboard_docente.png)
+![Dashboard Evaluador](../05_imagenes/dashboard_docente.png)
 *Nota.* Vista principal del panel docente.
 
 ## 4.4 Modelos Matemáticos y Simulaciones
@@ -595,11 +595,11 @@ El modelo de clasificación supervisada, basado en un algoritmo híbrido de **Ra
 - **F1-Score**: 93.72%
 
 **Figura 4.13.** *Matriz de Confusión del modelo final*
-![Matriz de Confusión](img/confusion_matrix.png)
+![Matriz de Confusión](../05_imagenes/confusion_matrix.png)
 *Nota.* Resultados de validación cruzada del modelo.
 
 **Figura 4.14.** *Curva ROC comparativa entre Random Forest y SVM*
-![Curva ROC Comparativa](img/roc_curve_comparison.png)
+![Curva ROC Comparativa](../05_imagenes/roc_curve_comparison.png)
 *Nota.* Comparativa de rendimiento entre algoritmos.
 
 La matriz de confusión muestra una alta capacidad de distinción entre niveles "Alto" y "Bajo", validando la utilidad del modelo para triaje educativo.
@@ -614,11 +614,11 @@ El despliegue del sistema ha permitido procesar un total de **1,873 evaluaciones
 *   **Satisfacción de Usuario**: En encuestas realizadas para medir la aceptación tecnológica (Modelo TAM), se obtuvo una calificación de **4.6/5** en facilidad de uso y **4.7/5** en satisfacción general.
 
 **Figura 4.15.** *Tiempo de evaluación Manual vs Digital*
-![Comparativa de Tiempo](../out/docs/diagramas/tiempo_evaluacion/TiempoEvaluacion.png)
+![Comparativa de Tiempo](../../out/docs/diagramas/tiempo_evaluacion/TiempoEvaluacion.png)
 *Nota.* Datos comparativos obtenidos de las pruebas de campo.
 
 **Figura 4.16.** *Historial de Entrenamientos del Modelo*
-![Historial de Entrenamientos](img/historial_entrenamientos.png)
+![Historial de Entrenamientos](../05_imagenes/historial_entrenamientos.png)
 *Nota.* Gráfico de convergencia de la función de pérdida.
 
 ## 4.6 Manuales, Normatividades y Documentación
