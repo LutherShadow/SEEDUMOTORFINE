@@ -22,11 +22,6 @@
   status = 200
 
 [[redirects]]
-  from = "/favicon.png"
-  to = "/favicon.png"
-  status = 200
-
-[[redirects]]
   from = "/logo.png"
   to = "/logo.png"
   status = 200
