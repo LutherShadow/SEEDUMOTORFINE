@@ -1,7 +1,7 @@
 {
-  "name": "Sistema de Evaluación Motriz",
-  "short_name": "SEEDU",
-  "description": "Plataforma integral para evaluación y seguimiento del desarrollo motriz infantil con análisis inteligente impulsado por IA",
+  "name": "SEEDUMOTORFINE - Sistema de Evaluación Motriz",
+  "short_name": "SEEDUMOTORFINE",
+  "description": "SEEDUMOTORFINE: Plataforma integral para evaluación y seguimiento del desarrollo motriz infantil con análisis inteligente impulsado por IA",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
