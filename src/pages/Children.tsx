@@ -151,14 +151,22 @@ const Children = () => {
 
   const fetchChildren = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("children")
         .select("*")
         .order("name");
 
+      // Si no es admin, filtrar por sus propios registros
+      if (!isAdmin && user?.id) {
+        query = query.eq('evaluator_id', user.id);
+      }
+
+      const { data, error } = await query;
+
       if (error) throw error;
       setChildren(data || []);
     } catch (error: any) {
+      console.error("Error fetching children:", error);
       toast({
         title: "Error",
         description: "No se pudieron cargar los aprendientes",

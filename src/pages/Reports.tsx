@@ -853,13 +853,12 @@ const Reports = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted to-background">
-      <header className="border-b bg-card shadow-soft">
+      <header className="border-b bg-card shadow-soft sticky top-0 z-30">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Button variant="ghost" onClick={() => navigate("/dashboard")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Volver al Panel
           </Button>
-          <ThemeToggle />
         </div>
       </header>
 

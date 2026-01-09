@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Plus, Eye, Download, Upload, FileSpreadsheet } from "lucide-react";
+import { ArrowLeft, Plus, Eye, Download, Upload, FileSpreadsheet, Menu } from "lucide-react";
 import { User, Session } from "@supabase/supabase-js";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -14,7 +14,14 @@ import { EvaluationForm } from "@/components/evaluations/EvaluationForm";
 import { generateIndividualPDF, generateGroupPDF } from "@/components/evaluations/PDFGenerator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import * as XLSX from 'xlsx';
 import { useOnline } from "@/hooks/use-online";
 import { queueOfflineOperation } from "@/lib/offlineSync";
@@ -102,7 +109,7 @@ const Evaluations = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (!session?.user) {
         navigate("/auth");
       }
@@ -111,7 +118,7 @@ const Evaluations = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (!session?.user) {
         navigate("/auth");
       }
@@ -253,10 +260,10 @@ const Evaluations = () => {
     ].filter((s): s is number => s !== null && typeof s === 'number');
 
     if (scores.length === 0) return { average: "0.00", completed: 0, total: 8 };
-    
+
     const sum = scores.reduce((acc, score) => acc + score, 0);
     const average = (sum / scores.length).toFixed(2);
-    
+
     return { average, completed: scores.length, total: 8 };
   };
 
@@ -356,7 +363,7 @@ const Evaluations = () => {
 
         const evaluationDate = row['Fecha de Evaluación'];
         let parsedDate;
-        
+
         if (typeof evaluationDate === 'number') {
           const excelDate = new Date((evaluationDate - 25569) * 86400 * 1000);
           parsedDate = excelDate.toISOString().split('T')[0];
@@ -475,103 +482,126 @@ const Evaluations = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted to-background">
-      <header className="border-b bg-card shadow-soft">
+      <header className="border-b bg-card shadow-soft sticky top-0 z-30">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={() => navigate("/dashboard")}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Volver al Panel
+            <Button variant="ghost" onClick={() => navigate("/dashboard")} className="gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Volver al Panel</span>
             </Button>
-            <ThemeToggle />
           </div>
 
-          <TooltipProvider>
-            <div className="flex gap-2" data-tutorial="export-buttons">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".xlsx,.xls"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="icon"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={children.length === 0}
-                  >
-                    <Upload className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Importar evaluaciones desde Excel</p>
-                </TooltipContent>
-              </Tooltip>
+          {/* Desktop Toolbar */}
+          <div className="hidden md:flex items-center gap-2" data-tutorial="export-buttons">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="icon"
-                    onClick={handleExportExcel}
-                    disabled={evaluations.length === 0}
-                  >
-                    <FileSpreadsheet className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Exportar a Excel</p>
-                </TooltipContent>
-              </Tooltip>
-              
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="icon"
-                    onClick={handleDownloadGroupPDF}
-                    disabled={filteredEvaluations.length === 0}
-                  >
-                    <Download className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Descargar Reporte Grupal</p>
-                </TooltipContent>
-              </Tooltip>
+            <Button
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={children.length === 0}
+              className="gap-2"
+            >
+              <Upload className="h-4 w-4" />
+              <span>Importar</span>
+            </Button>
 
-              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <Tooltip>
-                  <DialogTrigger asChild>
-                    <TooltipTrigger asChild>
-                      <Button disabled={children.length === 0} data-tutorial="new-evaluation-btn">
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                  </DialogTrigger>
-                  <TooltipContent>
-                    <p>Nueva Evaluación</p>
-                  </TooltipContent>
-                </Tooltip>
-              <DialogContent className="max-w-4xl max-h-[90vh]">
-                <DialogHeader>
-                  <DialogTitle>Nueva Evaluación de Motricidad Fina</DialogTitle>
-                  <DialogDescription>
-                    Seleccione las actividades y alumnos a evaluar
-                  </DialogDescription>
-                </DialogHeader>
-                <EvaluationForm
-                  children={children}
-                  onSubmit={handleSubmit}
-                  onCancel={() => setDialogOpen(false)}
-                />
-              </DialogContent>
-            </Dialog>
-            </div>
-          </TooltipProvider>
+            <Button
+              variant="outline"
+              onClick={handleExportExcel}
+              disabled={evaluations.length === 0}
+              className="gap-2"
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              <span>Exportar</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={handleDownloadGroupPDF}
+              disabled={filteredEvaluations.length === 0}
+              className="gap-2"
+            >
+              <Download className="h-4 w-4" />
+              <span>Reporte Grupal</span>
+            </Button>
+
+            <Button
+              onClick={() => setDialogOpen(true)}
+              disabled={children.length === 0}
+              data-tutorial="new-evaluation-btn"
+              className="gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Nueva Evaluación</span>
+            </Button>
+          </div>
+
+          {/* Mobile Toolbar (Hamburger) */}
+          <div className="md:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="h-6 w-6" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem onClick={() => setDialogOpen(true)} disabled={children.length === 0}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  <span>Nueva Evaluación</span>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem onClick={() => fileInputRef.current?.click()} disabled={children.length === 0}>
+                  <Upload className="mr-2 h-4 w-4" />
+                  <span>Importar Excel</span>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem onClick={handleExportExcel} disabled={evaluations.length === 0}>
+                  <FileSpreadsheet className="mr-2 h-4 w-4" />
+                  <span>Exportar Excel</span>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem onClick={handleDownloadGroupPDF} disabled={filteredEvaluations.length === 0}>
+                  <Download className="mr-2 h-4 w-4" />
+                  <span>Reporte Grupal</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
+
+        {/* Global Inputs/Dialogs kept in header for state scope access */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".xlsx,.xls"
+          onChange={handleFileUpload}
+          className="hidden"
+        />
+
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh]">
+            <DialogHeader>
+              <DialogTitle>Nueva Evaluación de Motricidad Fina</DialogTitle>
+              <DialogDescription>
+                Seleccione las actividades y alumnos a evaluar
+              </DialogDescription>
+            </DialogHeader>
+            <EvaluationForm
+              children={children}
+              onSubmit={handleSubmit}
+              onCancel={() => setDialogOpen(false)}
+            />
+          </DialogContent>
+        </Dialog>
       </header>
 
       <main className="container mx-auto px-4 py-8">
@@ -654,69 +684,69 @@ const Evaluations = () => {
             </div>
             <div className="grid gap-4" data-tutorial="evaluations-table">
               {displayedEvaluations.map((evaluation) => (
-              <Card key={evaluation.id}>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle>{evaluation.children.name}</CardTitle>
-                      <CardDescription>
-                        {new Date(evaluation.evaluation_date).toLocaleDateString()}
-                      </CardDescription>
+                <Card key={evaluation.id}>
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle>{evaluation.children.name}</CardTitle>
+                        <CardDescription>
+                          {new Date(evaluation.evaluation_date).toLocaleDateString()}
+                        </CardDescription>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <Badge variant="outline" className="text-lg font-bold">
+                          Promedio: {calculateAverage(evaluation).average}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {calculateAverage(evaluation).completed} de {calculateAverage(evaluation).total} actividades
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <Badge variant="outline" className="text-lg font-bold">
-                        Promedio: {calculateAverage(evaluation).average}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {calculateAverage(evaluation).completed} de {calculateAverage(evaluation).total} actividades
-                      </span>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                      {ACTIVITIES.map((activity) => {
+                        const score = evaluation[`test_${activity.id}_score` as keyof Evaluation] as number | null;
+                        const { label, color } = getScoreLabel(score);
+                        return (
+                          <div key={activity.id} className="text-sm">
+                            <p className="font-medium truncate">{activity.name}</p>
+                            <Badge variant={color as any}>{label}</Badge>
+                          </div>
+                        );
+                      })}
                     </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                    {ACTIVITIES.map((activity) => {
-                      const score = evaluation[`test_${activity.id}_score` as keyof Evaluation] as number | null;
-                      const { label, color } = getScoreLabel(score);
-                      return (
-                        <div key={activity.id} className="text-sm">
-                          <p className="font-medium truncate">{activity.name}</p>
-                          <Badge variant={color as any}>{label}</Badge>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedEvaluation(evaluation);
-                        setViewDialogOpen(true);
-                      }}
-                      data-tutorial="view-evaluation-btn"
-                    >
-                      <Eye className="mr-2 h-4 w-4" />
-                      Ver Detalles
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDownloadPDF(evaluation)}
-                      data-tutorial="download-pdf-btn"
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      Descargar PDF
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedEvaluation(evaluation);
+                          setViewDialogOpen(true);
+                        }}
+                        data-tutorial="view-evaluation-btn"
+                      >
+                        <Eye className="mr-2 h-4 w-4" />
+                        Ver Detalles
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDownloadPDF(evaluation)}
+                        data-tutorial="download-pdf-btn"
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        Descargar PDF
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
             {displayedEvaluations.length < filteredEvaluations.length && (
               <div className="mt-6 text-center">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => setDisplayLimit(prev => prev + 50)}
                 >
                   Cargar más evaluaciones ({filteredEvaluations.length - displayedEvaluations.length} restantes)
@@ -741,9 +771,9 @@ const Evaluations = () => {
                 const score = selectedEvaluation[`test_${activity.id}_score` as keyof Evaluation] as number | null;
                 const observations = selectedEvaluation[`test_${activity.id}_observations` as keyof Evaluation] as string | null;
                 const scoreInfo = SCORE_LABELS.find(s => s.value === score);
-                
+
                 if (score === null) return null;
-                
+
                 return (
                   <Card key={activity.id} className="p-4">
                     <h4 className="font-medium mb-2">{activity.id}. {activity.name}</h4>

@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, ClipboardList, Settings, Link2 } from "lucide-react";
+import { Plus, ClipboardList, Settings, Link2, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -69,7 +69,7 @@ export default function Questionnaires() {
       const { data, error } = await query;
 
       if (error) throw error;
-      
+
       // Convert UUID dimensions to names if needed
       if (data) {
         for (const response of data) {
@@ -78,15 +78,15 @@ export default function Questionnaires() {
               .from("questionnaire_dimensions")
               .select("id, name")
               .eq("questionnaire_id", response.questionnaire_id);
-            
+
             if (dimensions) {
               const dimensionMap = new Map(dimensions.map((d) => [d.id, d.name]));
-              
+
               // Convert dominant_dimension if it's a UUID
               if (response.dominant_dimension && dimensionMap.has(response.dominant_dimension)) {
                 response.dominant_dimension = dimensionMap.get(response.dominant_dimension);
               }
-              
+
               // Convert secondary_dimension if it's a UUID
               if (response.secondary_dimension && dimensionMap.has(response.secondary_dimension)) {
                 response.secondary_dimension = dimensionMap.get(response.secondary_dimension);
@@ -95,7 +95,7 @@ export default function Questionnaires() {
           }
         }
       }
-      
+
       return data;
     },
   });
@@ -148,15 +148,15 @@ export default function Questionnaires() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
+      <header className="border-b bg-card sticky top-0 z-30">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button variant="ghost" onClick={() => navigate("/dashboard")}>
-              ← Volver
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Volver al Panel
             </Button>
             <h1 className="text-2xl font-bold text-foreground">Cuestionarios</h1>
           </div>
-          <ThemeToggle />
         </div>
       </header>
 

@@ -10,7 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, Brain, Play, Download, Info, History } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { useTutorial } from "@/components/tutorial/TutorialProvider";
 import { aiTrainingTutorial } from "@/components/tutorial/tutorials";
 import { TutorialButton } from "@/components/tutorial/TutorialButton";
@@ -269,10 +268,10 @@ const AITraining = () => {
             <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
-                size="icon"
                 onClick={() => navigate("/dashboard")}
               >
-                <ArrowLeft className="h-5 w-5" />
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Volver al Panel
               </Button>
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-primary/10">
@@ -287,7 +286,6 @@ const AITraining = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <ThemeToggle />
               <Button onClick={handleDownloadMetrics} variant="outline" data-tutorial="download-metrics-btn">
                 <Download className="h-4 w-4 mr-2" />
                 Descargar Métricas

@@ -128,7 +128,7 @@ const ReportSettings: React.FC = () => {
     const template = getReportTypeTemplate(settings.report_type);
     if (template && template.custom_sections) {
       const sectionOrder = settings.section_order || template.defaultConfig.section_order || [];
-      
+
       // Initialize sections from template
       const updatedSections: ReportSection[] = sectionOrder
         .map((id) => {
@@ -150,7 +150,7 @@ const ReportSettings: React.FC = () => {
       template.custom_sections.forEach(section => {
         const contentKey = `content_${section.id}_text`;
         const showKey = `content_show_${section.id}`;
-        
+
         // Only set defaults if not already in settings
         if (!(contentKey in updatedSettings)) {
           updatedSettings[contentKey] = template.defaultConfig[contentKey] || '';
@@ -247,13 +247,13 @@ const ReportSettings: React.FC = () => {
           template.custom_sections.forEach(section => {
             const contentKey = `content_${section.id}_text`;
             const showKey = `content_show_${section.id}`;
-            
+
             // Try dynamic_content first, then individual column, then template default
-            settingsObj[contentKey] = dynamicContent[contentKey] || 
-                                     data[contentKey] || 
-                                     template.defaultConfig[contentKey] || '';
-            settingsObj[showKey] = dynamicContent[showKey] !== false && 
-                                  data[showKey] !== false; // Default to true if not set
+            settingsObj[contentKey] = dynamicContent[contentKey] ||
+              data[contentKey] ||
+              template.defaultConfig[contentKey] || '';
+            settingsObj[showKey] = dynamicContent[showKey] !== false &&
+              data[showKey] !== false; // Default to true if not set
           });
         }
 
@@ -458,7 +458,7 @@ const ReportSettings: React.FC = () => {
           dynamicContent[showKey] = (settings as any)[showKey] !== false;
         });
       }
-      
+
       // Only add dynamic_content if it has content
       if (Object.keys(dynamicContent).length > 0) {
         upsertData.dynamic_content = dynamicContent;
@@ -976,8 +976,9 @@ const ReportSettings: React.FC = () => {
         <div className="container mx-auto px-4 md:px-6 py-3 md:py-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
             <div className="flex items-center gap-3 md:gap-4">
-              <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")} className="shrink-0">
-                <ArrowLeft className="h-5 w-5" />
+              <Button variant="ghost" onClick={() => navigate("/dashboard")} className="shrink-0">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Volver al Panel
               </Button>
               <div>
                 <h1 className="text-lg md:text-xl font-semibold">Editor de Reportes</h1>

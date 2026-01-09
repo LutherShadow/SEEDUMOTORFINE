@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Audit analysis scripts
+analyze_audits.js
+analyze_audits.cjs
