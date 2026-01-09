@@ -1,18 +1,17 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, FileText, BarChart3, LogOut, UserCircle, Brain, ClipboardList } from "lucide-react";
+import { Users, FileText, BarChart3, Brain, ClipboardList } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { User, Session } from "@supabase/supabase-js";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { helpContent } from "@/lib/helpContent";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { useTutorial } from "@/components/tutorial/TutorialProvider";
 import { dashboardTutorial } from "@/components/tutorial/tutorials";
 import { TutorialButton } from "@/components/tutorial/TutorialButton";
 import { PostLoginTour } from "@/components/tutorial/PostLoginTour";
+import { Header } from "@/components/Layout/Header";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -79,56 +78,13 @@ const Dashboard = () => {
     }
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    toast({
-      title: "Sesión cerrada",
-      description: "Has cerrado sesión exitosamente",
-    });
-    navigate("/auth");
-  };
-
   if (!user) {
     return null;
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted to-background">
-      <header className="border-b bg-card shadow-soft">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src="/logo.svg" alt="Seedumotorfine" className="h-10 w-auto" />
-            <h1 className="text-2xl font-bold text-primary hidden sm:block">Sistema de Evaluación Motriz</h1>
-          </div>
-          <TooltipProvider>
-            <div className="flex gap-2">
-              <div data-tour="theme-toggle">
-                <ThemeToggle />
-              </div>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={() => navigate("/profile")} data-tour="profile-button" aria-label="Mi Perfil">
-                    <UserCircle className="h-5 w-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Mi Perfil</p>
-                </TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={handleLogout} data-tutorial="logout-btn" aria-label="Cerrar sesión">
-                    <LogOut className="h-5 w-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Cerrar Sesión</p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
-          </TooltipProvider>
-        </div>
-      </header>
+      <Header />
 
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8" data-tutorial="dashboard-title">

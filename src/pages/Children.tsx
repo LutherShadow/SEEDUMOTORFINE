@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Plus, Pencil, Trash2, Upload, Download, Archive, RotateCcw, FileText, ClipboardList } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Upload, Download, Archive, RotateCcw, FileText, ClipboardList, Menu } from "lucide-react";
 import { User, Session } from "@supabase/supabase-js";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -11,6 +11,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import * as XLSX from 'xlsx';
@@ -94,7 +102,7 @@ const Children = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (!session?.user) {
         navigate("/auth");
       }
@@ -103,7 +111,7 @@ const Children = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (!session?.user) {
         navigate("/auth");
       }
@@ -126,7 +134,7 @@ const Children = () => {
 
   const checkAdminRole = async () => {
     if (!user?.id) return;
-    
+
     try {
       const { data, error } = await supabase.rpc('has_role', {
         _user_id: user.id,
@@ -163,7 +171,7 @@ const Children = () => {
 
   const fetchDeletedChildren = async () => {
     if (!user?.id) return;
-    
+
     setLoadingTrash(true);
     try {
       const { data, error } = await supabase
@@ -225,10 +233,10 @@ const Children = () => {
         if (!isOnline) {
           // Modo offline: guardar en cola
           queueOfflineOperation('update', 'children', updateData);
-          
+
           // Actualizar estado local inmediatamente
-          setChildren(prev => prev.map(child => 
-            child.id === editingChild.id 
+          setChildren(prev => prev.map(child =>
+            child.id === editingChild.id
               ? { ...child, ...updateData }
               : child
           ));
@@ -271,7 +279,7 @@ const Children = () => {
           // Modo offline: guardar en cola
           const tempId = crypto.randomUUID();
           queueOfflineOperation('insert', 'children', { ...insertData, id: tempId });
-          
+
           // Actualizar estado local inmediatamente
           setChildren(prev => [...prev, { id: tempId, ...insertData }].sort((a, b) => a.name.localeCompare(b.name)));
 
@@ -294,7 +302,7 @@ const Children = () => {
             title: "Éxito",
             description: "Aprendiente registrado correctamente"
           });
-          
+
           await fetchChildren();
         }
       }
@@ -406,7 +414,7 @@ const Children = () => {
         grade: deletedChild.grade,
         school: deletedChild.school
       }].sort((a, b) => a.name.localeCompare(b.name)));
-      
+
       setDeletedChildren(prev => prev.filter(child => child.id !== deletedChild.id));
 
       toast({
@@ -554,7 +562,7 @@ const Children = () => {
       for (const row of jsonData) {
         try {
           const childData: any = row;
-          
+
           // Mapear columnas del Excel a campos de la base de datos
           const childToInsert = {
             name: childData.nombre || childData.Nombre || childData.name || "",
@@ -613,168 +621,202 @@ const Children = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted to-background">
-      <header className="border-b bg-card shadow-soft">
+      <header className="border-b bg-card shadow-soft sticky top-0 z-30">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={() => navigate("/dashboard")}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Volver al Panel
+            <Button variant="ghost" onClick={() => navigate("/dashboard")} className="gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Volver</span>
             </Button>
             <ThemeToggle />
           </div>
 
-          <TooltipProvider>
-            <div className="flex gap-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".xlsx,.xls"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="icon"
-                    onClick={handleExportExcel}
-                    disabled={children.length === 0}
-                  >
-                    <Download className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Exportar Excel</p>
-                </TooltipContent>
-              </Tooltip>
-              
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="icon"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={importing}
-                  >
-                    <Upload className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{importing ? "Importando..." : "Importar Excel"}</p>
-                </TooltipContent>
-              </Tooltip>
+          {/* Desktop Toolbar */}
+          <div className="hidden md:flex items-center gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="icon"
-                    onClick={() => {
-                      setTrashDialogOpen(true);
-                      fetchDeletedChildren();
-                    }}
-                  >
-                    <Archive className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Papelera</p>
-                </TooltipContent>
-              </Tooltip>
+            <Button
+              variant="outline"
+              onClick={handleExportExcel}
+              disabled={children.length === 0}
+              className="gap-2"
+            >
+              <Download className="h-4 w-4" />
+              <span>Exportar</span>
+            </Button>
 
-              <Dialog open={dialogOpen} onOpenChange={(open) => {
-                setDialogOpen(open);
-                if (!open) resetForm();
-              }}>
-                <Tooltip>
-                  <DialogTrigger asChild>
-                    <TooltipTrigger asChild>
-                      <Button data-tutorial="add-child-btn">
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                  </DialogTrigger>
-                  <TooltipContent>
-                    <p>Agregar Aprendiente</p>
-                  </TooltipContent>
-                </Tooltip>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>{editingChild ? "Editar Aprendiente" : "Agregar Aprendiente"}</DialogTitle>
-                <DialogDescription>
-                  Complete los datos del aprendiente
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="name">Nombre Completo *</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    maxLength={200}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="birth_date">Fecha de Nacimiento *</Label>
-                  <Input
-                    id="birth_date"
-                    type="date"
-                    value={formData.birth_date}
-                    onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
-                    max={new Date().toISOString().split('T')[0]}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="gender">Género</Label>
-                  <Select value={formData.gender} onValueChange={(value) => setFormData({ ...formData, gender: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Masculino">Masculino</SelectItem>
-                      <SelectItem value="Femenino">Femenino</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="grade">Grado</Label>
-                  <Select value={formData.grade} onValueChange={(value) => setFormData({ ...formData, grade: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar grado" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1ro">1ro</SelectItem>
-                      <SelectItem value="2do">2do</SelectItem>
-                      <SelectItem value="3ro">3ro</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="school">Escuela</Label>
-                  <Input
-                    id="school"
-                    value={formData.school}
-                    onChange={(e) => setFormData({ ...formData, school: e.target.value })}
-                    maxLength={200}
-                  />
-                </div>
-                <div className="flex gap-2 justify-end">
-                  <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button type="submit">
-                    {editingChild ? "Actualizar" : "Guardar"}
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-            </div>
-          </TooltipProvider>
+            <Button
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={importing}
+              className="gap-2"
+            >
+              <Upload className="h-4 w-4" />
+              <span>{importing ? "Importando..." : "Importar"}</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => {
+                setTrashDialogOpen(true);
+                fetchDeletedChildren();
+              }}
+              className="gap-2"
+            >
+              <Archive className="h-4 w-4" />
+              <span>Papelera</span>
+            </Button>
+
+            <Button
+              onClick={() => {
+                setEditingChild(null);
+                resetForm();
+                setDialogOpen(true);
+              }}
+              data-tutorial="add-child-btn"
+              className="gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Agregar</span>
+            </Button>
+          </div>
+
+          {/* Mobile Toolbar (Hamburger) */}
+          <div className="md:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="h-6 w-6" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem onClick={() => {
+                  setEditingChild(null);
+                  resetForm();
+                  setDialogOpen(true);
+                }}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  <span>Agregar Aprendiente</span>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem onClick={handleExportExcel} disabled={children.length === 0}>
+                  <Download className="mr-2 h-4 w-4" />
+                  <span>Exportar Excel</span>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem onClick={() => fileInputRef.current?.click()} disabled={importing}>
+                  <Upload className="mr-2 h-4 w-4" />
+                  <span>Importar Excel</span>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem onClick={() => {
+                  setTrashDialogOpen(true);
+                  fetchDeletedChildren();
+                }}>
+                  <Archive className="mr-2 h-4 w-4" />
+                  <span>Papelera</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
+
+        {/* Global Hidden Inputs/Dialogs that were in header */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".xlsx,.xls"
+          onChange={handleFileUpload}
+          className="hidden"
+        />
+
+        <Dialog open={dialogOpen} onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open) resetForm();
+        }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>{editingChild ? "Editar Aprendiente" : "Agregar Aprendiente"}</DialogTitle>
+              <DialogDescription>
+                Complete los datos del aprendiente
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="name">Nombre Completo *</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  maxLength={200}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="birth_date">Fecha de Nacimiento *</Label>
+                <Input
+                  id="birth_date"
+                  type="date"
+                  value={formData.birth_date}
+                  onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
+                  max={new Date().toISOString().split('T')[0]}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="gender">Género</Label>
+                <Select value={formData.gender} onValueChange={(value) => setFormData({ ...formData, gender: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Masculino">Masculino</SelectItem>
+                    <SelectItem value="Femenino">Femenino</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="grade">Grado</Label>
+                <Select value={formData.grade} onValueChange={(value) => setFormData({ ...formData, grade: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar grado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1ro">1ro</SelectItem>
+                    <SelectItem value="2do">2do</SelectItem>
+                    <SelectItem value="3ro">3ro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="school">Escuela</Label>
+                <Input
+                  id="school"
+                  value={formData.school}
+                  onChange={(e) => setFormData({ ...formData, school: e.target.value })}
+                  maxLength={200}
+                />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit">
+                  {editingChild ? "Actualizar" : "Guardar"}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </header>
 
       <main className="container mx-auto px-4 py-8">
@@ -798,7 +840,7 @@ const Children = () => {
                 className="w-full md:w-96"
               />
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="grade-filter" className="mb-2 block">Filtrar por grado</Label>
@@ -848,7 +890,7 @@ const Children = () => {
         ) : (() => {
           // Filtrar children
           const filteredChildren = children.filter(child => {
-            const matchesSearch = searchTerm === "" || 
+            const matchesSearch = searchTerm === "" ||
               child.name.toLowerCase().includes(searchTerm.toLowerCase());
             const matchesGrade = gradeFilter === "all" || child.grade === gradeFilter;
             const matchesSchool = !isAdmin || schoolFilter === "all" || child.school === schoolFilter;
@@ -870,71 +912,71 @@ const Children = () => {
             <>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3" data-tutorial="children-table">
                 {paginatedChildren.map((child) => (
-              <Card key={child.id}>
-                <CardHeader>
-                  <CardTitle>{child.name}</CardTitle>
-                  <CardDescription>
-                    Nacimiento: {new Date(child.birth_date).toLocaleDateString()}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2 text-sm">
-                    {child.gender && <p><strong>Género:</strong> {child.gender}</p>}
-                    {child.grade && <p><strong>Grado:</strong> {child.grade}</p>}
-                    {child.school && <p><strong>Escuela:</strong> {child.school}</p>}
-                  </div>
-                  <div className="flex gap-2 mt-4" data-tutorial="child-actions">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => navigate(`/academic-record?childId=${child.id}`)}
-                        >
-                          <FileText className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Expediente Académico</p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => navigate(`/questionnaires?childId=${child.id}`)}
-                        >
-                          <ClipboardList className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Ver Cuestionarios</p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="outline" size="sm" onClick={() => openEditDialog(child)}>
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Editar</p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="destructive" size="sm" onClick={() => moveToTrash(child.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Mover a papelera</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                </CardContent>
-              </Card>
+                  <Card key={child.id}>
+                    <CardHeader>
+                      <CardTitle>{child.name}</CardTitle>
+                      <CardDescription>
+                        Nacimiento: {new Date(child.birth_date).toLocaleDateString()}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2 text-sm">
+                        {child.gender && <p><strong>Género:</strong> {child.gender}</p>}
+                        {child.grade && <p><strong>Grado:</strong> {child.grade}</p>}
+                        {child.school && <p><strong>Escuela:</strong> {child.school}</p>}
+                      </div>
+                      <div className="flex gap-2 mt-4" data-tutorial="child-actions">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => navigate(`/academic-record?childId=${child.id}`)}
+                            >
+                              <FileText className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Expediente Académico</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => navigate(`/questionnaires?childId=${child.id}`)}
+                            >
+                              <ClipboardList className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Ver Cuestionarios</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="outline" size="sm" onClick={() => openEditDialog(child)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Editar</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="destructive" size="sm" onClick={() => moveToTrash(child.id)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Mover a papelera</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
 
@@ -944,7 +986,7 @@ const Children = () => {
                   <Pagination>
                     <PaginationContent>
                       <PaginationItem>
-                        <PaginationPrevious 
+                        <PaginationPrevious
                           href="#"
                           onClick={(e) => {
                             e.preventDefault();
@@ -953,7 +995,7 @@ const Children = () => {
                           className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
                         />
                       </PaginationItem>
-                      
+
                       {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                         <PaginationItem key={page}>
                           <PaginationLink
@@ -970,7 +1012,7 @@ const Children = () => {
                       ))}
 
                       <PaginationItem>
-                        <PaginationNext 
+                        <PaginationNext
                           href="#"
                           onClick={(e) => {
                             e.preventDefault();
@@ -1064,7 +1106,7 @@ const Children = () => {
           )}
         </DialogContent>
       </Dialog>
-      
+
       <TutorialButton onClick={() => startTutorial(childrenTutorial)} />
     </div>
   );
