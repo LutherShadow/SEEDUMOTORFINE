@@ -184,9 +184,6 @@ const Children = () => {
         // Use school filter if set
         if (schoolFilter && schoolFilter !== 'all') {
           query = query.eq('school', schoolFilter);
-        } else if (!searchTerm) {
-          // Default limit if no search text
-          query = query.limit(50);
         }
       }
 
@@ -194,11 +191,6 @@ const Children = () => {
 
       if (error) throw error;
       setChildren(data || []);
-
-      // Show toast hint for admins if results are limited
-      if (isAdmin && !schoolFilter && !searchTerm && (data?.length || 0) >= 50) {
-        // Optional: inform user that list is truncated
-      }
 
     } catch (error: any) {
       console.error("Error fetching children:", error);
