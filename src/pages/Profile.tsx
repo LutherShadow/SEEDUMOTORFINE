@@ -5,13 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Save, User as UserIcon, HelpCircle } from "lucide-react";
+import { ArrowLeft, Save, User as UserIcon, HelpCircle, Sun, Moon, Monitor } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { User, Session } from "@supabase/supabase-js";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ResetTourButton } from "@/components/tutorial/ResetTourButton";
+import { useTheme } from "@/components/ThemeProvider";
 
 interface Profile {
   id: string;
@@ -23,6 +24,7 @@ interface Profile {
 const Profile = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -41,7 +43,7 @@ const Profile = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (!session?.user) {
         navigate("/auth");
       }
@@ -50,7 +52,7 @@ const Profile = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (!session?.user) {
         navigate("/auth");
       }
@@ -145,7 +147,6 @@ const Profile = () => {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Volver al Panel
           </Button>
-          <ThemeToggle />
         </div>
       </header>
 
@@ -256,17 +257,43 @@ const Profile = () => {
               <Switch
                 id="tutorials-toggle"
                 checked={tutorialsEnabled}
-                onCheckedChange={(checked) => {
-                  setTutorialsEnabled(checked);
-                  localStorage.setItem('tutorialsEnabled', String(checked));
-                  toast({
-                    title: checked ? "Tutoriales activados" : "Tutoriales desactivados",
-                    description: checked 
-                      ? "Verás las guías de ayuda al ingresar a cada sección" 
-                      : "No se mostrarán tutoriales automáticamente"
-                  });
                 }}
               />
+            </div>
+
+            <Separator />
+
+            <div className="space-y-3">
+              <Label className="text-base flex items-center gap-2">
+                <Sun className="h-4 w-4" />
+                Tema de la interfaz
+              </Label>
+              <div className="grid grid-cols-3 gap-2">
+                <Button
+                  variant={theme === 'light' ? 'default' : 'outline'}
+                  className="flex flex-col items-center justify-center gap-2 h-20"
+                  onClick={() => setTheme('light')}
+                >
+                  <Sun className="h-5 w-5" />
+                  <span className="text-xs">Claro</span>
+                </Button>
+                <Button
+                  variant={theme === 'dark' ? 'default' : 'outline'}
+                  className="flex flex-col items-center justify-center gap-2 h-20"
+                  onClick={() => setTheme('dark')}
+                >
+                  <Moon className="h-5 w-5" />
+                  <span className="text-xs">Oscuro</span>
+                </Button>
+                <Button
+                  variant={theme === 'system' ? 'default' : 'outline'}
+                  className="flex flex-col items-center justify-center gap-2 h-20"
+                  onClick={() => setTheme('system')}
+                >
+                  <Monitor className="h-5 w-5" />
+                  <span className="text-xs">Sistema</span>
+                </Button>
+              </div>
             </div>
 
             <Separator />

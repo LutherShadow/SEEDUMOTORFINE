@@ -149,6 +149,26 @@ const Children = () => {
     }
   };
 
+  const [schools, setSchools] = useState<string[]>([]);
+
+  // Optimized fetch for schools first
+  const fetchSchools = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("children")
+        .select("school")
+        .not("school", "is", null);
+
+      if (error) throw error;
+
+      // Get unique schools
+      const uniqueSchools = Array.from(new Set(data?.map(item => item.school).filter(Boolean))) as string[];
+      setSchools(uniqueSchools.sort());
+    } catch (error) {
+      console.error("Error fetching schools:", error);
+    }
+  };
+
   const fetchChildren = async () => {
     try {
       let query = supabase
@@ -159,12 +179,27 @@ const Children = () => {
       // Si no es admin, filtrar por sus propios registros
       if (!isAdmin && user?.id) {
         query = query.eq('evaluator_id', user.id);
+      } else if (isAdmin) {
+        // Optimization for admins: if no specific filter, limit results
+        // Use school filter if set
+        if (schoolFilter && schoolFilter !== 'all') {
+          query = query.eq('school', schoolFilter);
+        } else if (!searchTerm) {
+          // Default limit if no search text
+          query = query.limit(50);
+        }
       }
 
       const { data, error } = await query;
 
       if (error) throw error;
       setChildren(data || []);
+
+      // Show toast hint for admins if results are limited
+      if (isAdmin && !schoolFilter && !searchTerm && (data?.length || 0) >= 50) {
+        // Optional: inform user that list is truncated
+      }
+
     } catch (error: any) {
       console.error("Error fetching children:", error);
       toast({
@@ -176,6 +211,19 @@ const Children = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchSchools();
+    }
+  }, [isAdmin]);
+
+  // Re-fetch when filters change (debounced effect could be better but this works for now)
+  useEffect(() => {
+    if (user) {
+      fetchChildren();
+    }
+  }, [user, isAdmin, schoolFilter]); // Add schoolFilter dependency
 
   const fetchDeletedChildren = async () => {
     if (!user?.id) return;
@@ -867,15 +915,15 @@ const Children = () => {
 
               {isAdmin && (
                 <div>
-                  <Label htmlFor="school-filter" className="mb-2 block">Filtrar por escuela</Label>
+                  <Label htmlFor="school-filter" className="mb-2 block">Filtrar por Instituto o Preescolar</Label>
                   <Select value={schoolFilter} onValueChange={setSchoolFilter}>
                     <SelectTrigger id="school-filter" className="w-full bg-card">
                       <SelectValue placeholder="Todas las escuelas" />
                     </SelectTrigger>
                     <SelectContent className="bg-card">
                       <SelectItem value="all">Todas las escuelas</SelectItem>
-                      {Array.from(new Set(children.map(c => c.school).filter(Boolean))).sort().map(school => (
-                        <SelectItem key={school} value={school!}>{school}</SelectItem>
+                      {schools.map(school => (
+                        <SelectItem key={school} value={school}>{school}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
