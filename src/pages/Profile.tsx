@@ -257,6 +257,9 @@ const Profile = () => {
               <Switch
                 id="tutorials-toggle"
                 checked={tutorialsEnabled}
+                onCheckedChange={(checked) => {
+                  setTutorialsEnabled(checked);
+                  localStorage.setItem('tutorialsEnabled', String(checked));
                 }}
               />
             </div>
