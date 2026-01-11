@@ -20,6 +20,7 @@ import { useTutorial } from "@/components/tutorial/TutorialProvider";
 import { reportsTutorial } from "@/components/tutorial/tutorials";
 import { TutorialButton } from "@/components/tutorial/TutorialButton";
 import { generateLocalPredictions, generateLocalSuggestions } from "@/lib/localAIEngine";
+import { motion, Variants } from "framer-motion";
 
 interface Child {
   id: string;
@@ -201,7 +202,6 @@ const Reports = () => {
         .select("*")
         .eq("child_id", selectedChild)
         .order("calculated_at", { ascending: false })
-        .order("calculated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
@@ -258,7 +258,6 @@ const Reports = () => {
   const generateAISuggestions = async () => {
     if (evaluations.length === 0) return;
 
-    // Validar que existan cuestionarios Cornell y/o CHAEA
     let missingQuestionnairesList: string[] = [];
     try {
       const { data: questionnaires } = await supabase
@@ -276,7 +275,6 @@ const Reports = () => {
             .from('questionnaire_responses')
             .select('id')
             .eq('child_id', selectedChild)
-            .eq('questionnaire_id', questionnaire.id)
             .eq('questionnaire_id', questionnaire.id)
             .limit(1)
             .maybeSingle();
@@ -305,11 +303,9 @@ const Reports = () => {
 
     const childName = children.find(c => c.id === selectedChild)?.name || "Aprendiente";
 
-    // Función helper para usar motor local
     const useLocalEngine = async () => {
       console.log('Usando motor de IA local para sugerencias...');
 
-      // Fetch trained model
       const { data: trainedModel } = await supabase
         .from('ai_training_models')
         .select('*')
@@ -317,7 +313,6 @@ const Reports = () => {
         .limit(1)
         .single();
 
-      // Fetch learning style assessment for this child
       const { data: learningStyle } = await supabase
         .from('learning_style_assessments')
         .select('*')
@@ -334,14 +329,11 @@ const Reports = () => {
       );
       setAiSuggestions(localSuggestions);
 
-      // Save to database (same as Edge Function does)
       if (evaluations && evaluations.length > 0) {
         const latestEval = evaluations[evaluations.length - 1];
 
-        // Save personalized activities from local suggestions
         if (localSuggestions.suggestions && Array.isArray(localSuggestions.suggestions)) {
           const activitiesToSave = localSuggestions.suggestions.flatMap((suggestion: any) => {
-            // Each suggestion can have multiple concrete activities
             if (suggestion.concreteActivities && Array.isArray(suggestion.concreteActivities)) {
               return suggestion.concreteActivities.map((concrete: any) => {
                 const durationMatch = concrete.duration?.match(/\d+/);
@@ -377,13 +369,10 @@ const Reports = () => {
 
             if (insertError) {
               console.error('Error saving activities:', insertError);
-            } else {
-              console.log('Local activities saved to DB:', activitiesToSave.length);
             }
           }
         }
 
-        // Save AI results summary
         await supabase.from('ai_results').insert({
           evaluation_id: latestEval.id,
           recommendations: localSuggestions.overallRecommendation || "Sugerencias generadas localmente",
@@ -392,7 +381,6 @@ const Reports = () => {
         });
       }
 
-      // Refresh DB-stored data (same as Edge Function success path)
       await fetchPersonalizedActivities();
       await fetchCompetencyIndex();
 
@@ -402,7 +390,6 @@ const Reports = () => {
       });
     };
 
-    // Use Local AI Engine directly (Edge Function has persistent issues)
     try {
       await useLocalEngine();
       toast({
@@ -418,56 +405,6 @@ const Reports = () => {
     } finally {
       setLoadingSuggestions(false);
     }
-
-    /* EDGE FUNCTION DISABLED DUE TO PERSISTENT 500 ERRORS
-    // Use Real AI (Edge Function V22) with Local Fallback
-    try {
-      console.log('Calling Real AI (generate-suggestions)...');
-      const { data, error } = await supabase.functions.invoke('generate-suggestions', {
-        body: {
-          childId: selectedChild,
-          childName: childName,
-          evaluations: evaluations
-        }
-      });
-
-      if (error) throw error;
-
-      if (data && data.suggestions) {
-        setAiSuggestions(data);
-        // Refresh DB-stored data populated by the Edge Function
-        await fetchPersonalizedActivities();
-        await fetchCompetencyIndex();
-
-        toast({
-          title: "IA Generativa Activada",
-          description: "Sugerencias creadas con modelo Híbrido V22.",
-        });
-      } else {
-        throw new Error("Formato inválido de Edge Function");
-      }
-
-    } catch (edgeError) {
-      console.warn('Edge Function failed, using local fallback:', edgeError);
-
-      try {
-        await useLocalEngine();
-        toast({
-          title: "Modo Offline",
-          description: "Usando motor local (Conexión a IA falló)",
-          variant: "default"
-        });
-      } catch (localError) {
-        toast({
-          title: "Error Total",
-          description: "No se pudieron generar sugerencias (ni Cloud ni Local)",
-          variant: "destructive"
-        });
-      }
-    } finally {
-      setLoadingSuggestions(false);
-    }
-    */
   };
 
   const generateProgressPredictions = async () => {
@@ -480,7 +417,6 @@ const Reports = () => {
       return;
     }
 
-    // Validar que existan cuestionarios Cornell y/o CHAEA
     let missingQuestionnairesList: string[] = [];
     try {
       const { data: questionnaires } = await supabase
@@ -498,7 +434,6 @@ const Reports = () => {
             .from('questionnaire_responses')
             .select('id')
             .eq('child_id', selectedChild)
-            .eq('questionnaire_id', questionnaire.id)
             .eq('questionnaire_id', questionnaire.id)
             .limit(1)
             .maybeSingle();
@@ -527,9 +462,7 @@ const Reports = () => {
 
     const childName = children.find(c => c.id === selectedChild)?.name || "Aprendiente";
 
-    // Función helper para usar motor local
     const useLocalEngine = async () => {
-      console.log('Usando motor de predicción local...');
       const { data: trainedModel } = await supabase
         .from('ai_training_models')
         .select('*')
@@ -546,7 +479,6 @@ const Reports = () => {
       });
     };
 
-    // Use Local Prediction Engine directly (Edge Function has persistent issues)
     try {
       await useLocalEngine();
     } catch (localError) {
@@ -558,50 +490,8 @@ const Reports = () => {
     } finally {
       setLoadingPredictions(false);
     }
-
-    /* EDGE FUNCTION DISABLED DUE TO PERSISTENT 500 ERRORS
-    // Use Real AI (Edge Function V22) with Local Fallback
-    try {
-      console.log('Calling Real AI (predict-progress)...');
-      const { data, error } = await supabase.functions.invoke('predict-progress', {
-        body: {
-          child_id: selectedChild,
-          child_name: childName
-        }
-      });
-
-      if (error) throw error;
-
-      if (data) {
-        setProgressPredictions(data);
-        toast({
-          title: "Predicción IA",
-          description: "Análisis proyectivo completado por Gemini.",
-          className: "bg-blue-50 border-blue-200" // Light blue toast
-        });
-      } else {
-        throw new Error("Formato inválido de predicción");
-      }
-
-    } catch (edgeError) {
-      console.warn('Prediction Edge Function failed, using local fallback:', edgeError);
-
-      try {
-        await useLocalEngine();
-      } catch (localError) {
-        toast({
-          title: "Error",
-          description: "No se pudieron generar predicciones",
-          variant: "destructive"
-        });
-      }
-    } finally {
-      setLoadingPredictions(false);
-    }
-    */
   };
 
-  // Guardar una sugerencia de IA como actividad personalizada
   const saveActivityFromSuggestion = async (suggestion: Suggestion, activityIndex: number, replaceOption: number | null = null) => {
     if (!selectedChild) return;
 
@@ -620,7 +510,7 @@ const Reports = () => {
         duration_minutes: concreteActivity?.duration ? parseInt(concreteActivity.duration) || 15 : 15,
         success_criteria: suggestion.expectedProgress,
         progression_notes: concreteActivity?.steps?.join('. ') || '',
-        replaces_activity_id: replaceOption, // null = agregar como nueva, 1-8 = reemplazar actividad específica
+        replaces_activity_id: replaceOption,
         ai_confidence: 0.85,
         is_active: false
       };
@@ -665,7 +555,6 @@ const Reports = () => {
       const maxWidth = pageWidth - (margin * 2);
       let yPosition = 20;
 
-      // Título
       doc.setFontSize(18);
       doc.setFont('helvetica', 'bold');
       doc.text('Sugerencias de IA para Motricidad Fina', margin, yPosition);
@@ -678,14 +567,12 @@ const Reports = () => {
       doc.text(`Fecha: ${new Date().toLocaleDateString('es-ES')}`, margin, yPosition);
       yPosition += 15;
 
-      // Sugerencias
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
       doc.text('Sugerencias Personalizadas:', margin, yPosition);
       yPosition += 10;
 
       aiSuggestions.suggestions.forEach((suggestion, index) => {
-        // Verificar si necesitamos nueva página
         if (yPosition > 250) {
           doc.addPage();
           yPosition = 20;
@@ -700,12 +587,10 @@ const Reports = () => {
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
 
-        // Descripción
         const descLines = doc.splitTextToSize(suggestion.description, maxWidth);
         doc.text(descLines, margin, yPosition);
         yPosition += (descLines.length * 5) + 5;
 
-        // Beneficios
         doc.setFont('helvetica', 'bold');
         doc.text('Beneficios:', margin, yPosition);
         yPosition += 5;
@@ -718,7 +603,6 @@ const Reports = () => {
         });
         yPosition += 3;
 
-        // Progreso esperado
         doc.setFont('helvetica', 'bold');
         doc.text('Progreso Esperado:', margin, yPosition);
         yPosition += 5;
@@ -728,7 +612,6 @@ const Reports = () => {
         yPosition += (progressLines.length * 5) + 10;
       });
 
-      // Recomendación general
       if (aiSuggestions.overallRecommendation) {
         if (yPosition > 230) {
           doc.addPage();
@@ -746,7 +629,6 @@ const Reports = () => {
         doc.text(recLines, margin, yPosition);
       }
 
-      // Guardar PDF
       const fileName = `sugerencias_ia_${childName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
       doc.save(fileName);
 
@@ -769,8 +651,6 @@ const Reports = () => {
 
     try {
       const childName = children.find(c => c.id === selectedChild)?.name || "Aprendiente";
-
-      // Use the new PDF generator
       const { generateReportPDF } = await import('@/lib/ReportPDFGenerator');
 
       await generateReportPDF({
@@ -794,6 +674,28 @@ const Reports = () => {
       });
     }
   };
+
+  const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants: Variants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: { type: "spring", stiffness: 300, damping: 24 }
+    }
+  };
+
+  const MotionDiv = motion.div;
 
   const exportToCSV = () => {
     if (evaluations.length === 0) return;
@@ -854,21 +756,38 @@ const Reports = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted to-background">
       <header className="border-b bg-card shadow-soft sticky top-0 z-30">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Button variant="ghost" onClick={() => navigate("/dashboard")}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Volver al Panel
+        <MotionDiv
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.4 }}
+          className="container mx-auto px-4 py-4 flex items-center justify-between"
+        >
+          <Button
+            variant="outline"
+            onClick={() => navigate("/dashboard")}
+            className="bg-white/10 hover:bg-white/20 hover:text-primary transition-all gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span className="hidden sm:inline">Volver al Panel</span>
           </Button>
-        </div>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+          </div>
+        </MotionDiv>
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
+        <MotionDiv
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="mb-8"
+        >
           <h1 className="text-3xl font-bold mb-2">Reportes y Análisis</h1>
           <p className="text-muted-foreground">
             Visualiza el progreso y estadísticas de las evaluaciones
           </p>
-        </div>
+        </MotionDiv>
 
         <Card className="mb-6" data-tutorial="select-child">
           <CardHeader>
@@ -929,215 +848,222 @@ const Reports = () => {
             </p>
           </Card>
         ) : stats && (
-          <div className="space-y-6">
+          <MotionDiv
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="space-y-6"
+          >
             {/* Motor de Sugerencias IA - Sección Consolidada */}
             {(competencyIndex || personalizedActivities.length > 0) && (
-              <Card className="border-primary/20 bg-gradient-to-br from-primary/5 via-background to-primary/5">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-primary/10">
-                        <Sparkles className="h-6 w-6 text-primary" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-2xl">Motor de Sugerencias IA</CardTitle>
-                        <CardDescription>
-                          Sistema inteligente de análisis y modificación automática de actividades personalizadas
-                        </CardDescription>
+              <MotionDiv variants={itemVariants}>
+                <Card className="border-primary/20 bg-gradient-to-br from-primary/5 via-background to-primary/5">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-primary/10">
+                          <Sparkles className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-2xl">Motor de Sugerencias IA</CardTitle>
+                          <CardDescription>
+                            Sistema inteligente de análisis y modificación automática de actividades personalizadas
+                          </CardDescription>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  {/* Aviso de cuestionarios faltantes */}
-                  {missingQuestionnaires.length > 0 && (
-                    <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                      <div className="flex items-start gap-2">
-                        <Badge variant="outline" className="bg-yellow-500/20 text-yellow-700 dark:text-yellow-300 border-yellow-500/30">
-                          Incompleto
-                        </Badge>
-                        <p className="text-sm text-muted-foreground">
-                          Las sugerencias y predicciones están incompletas. Para obtener resultados más precisos, se recomienda completar los siguientes cuestionarios: <span className="font-semibold">{missingQuestionnaires.join(', ')}</span>.
+                    {/* Aviso de cuestionarios faltantes */}
+                    {missingQuestionnaires.length > 0 && (
+                      <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                        <div className="flex items-start gap-2">
+                          <Badge variant="outline" className="bg-yellow-500/20 text-yellow-700 dark:text-yellow-300 border-yellow-500/30">
+                            Incompleto
+                          </Badge>
+                          <p className="text-sm text-muted-foreground">
+                            Las sugerencias y predicciones están incompletas. Para obtener resultados más precisos, se recomienda completar los siguientes cuestionarios: <span className="font-semibold">{missingQuestionnaires.join(', ')}</span>.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Índice de Competencia */}
+                    {competencyIndex && (
+                      <div className="border rounded-lg p-4 bg-background/50" data-tutorial="competency-index">
+                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                          <TrendingUp className="h-5 w-5 text-primary" />
+                          Índice de Competencia
+                        </h3>
+                        <CompetencyIndex
+                          competencyIndex={competencyIndex}
+                          childName={children.find(c => c.id === selectedChild)?.name || "Aprendiente"}
+                        />
+                      </div>
+                    )}
+
+                    {/* Actividades Personalizadas - Sección Única */}
+                    {personalizedActivities.length > 0 && (
+                      <div className="border rounded-lg p-4 bg-background/50" data-tutorial="personalized-activities">
+                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                          <Lightbulb className="h-5 w-5 text-primary" />
+                          Actividades Personalizadas Generadas por IA
+                        </h3>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          Actividades generadas por IA listas para aplicar con un clic. El sistema ajusta automáticamente la dificultad según el índice de competencia, estilos de aprendizaje (TAM, Cornell, CHAEA) y el progreso del aprendiente.
                         </p>
+                        <PersonalizedActivities
+                          activities={personalizedActivities}
+                          childId={selectedChild}
+                          childName={children.find(c => c.id === selectedChild)?.name || "Aprendiente"}
+                          onActivitiesUpdated={() => {
+                            fetchPersonalizedActivities();
+                          }}
+                        />
                       </div>
-                    </div>
-                  )}
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Índice de Competencia */}
-                  {competencyIndex && (
-                    <div className="border rounded-lg p-4 bg-background/50" data-tutorial="competency-index">
-                      <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                        <TrendingUp className="h-5 w-5 text-primary" />
-                        Índice de Competencia
-                      </h3>
-                      <CompetencyIndex
-                        competencyIndex={competencyIndex}
-                        childName={children.find(c => c.id === selectedChild)?.name || "Aprendiente"}
-                      />
-                    </div>
-                  )}
+                    )}
 
-                  {/* Actividades Personalizadas - Sección Única */}
-                  {personalizedActivities.length > 0 && (
-                    <div className="border rounded-lg p-4 bg-background/50" data-tutorial="personalized-activities">
-                      <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                        <Lightbulb className="h-5 w-5 text-primary" />
-                        Actividades Personalizadas Generadas por IA
-                      </h3>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Actividades generadas por IA listas para aplicar con un clic. El sistema ajusta automáticamente la dificultad según el índice de competencia, estilos de aprendizaje (TAM, Cornell, CHAEA) y el progreso del aprendiente.
-                      </p>
-                      <PersonalizedActivities
-                        activities={personalizedActivities}
-                        childId={selectedChild}
-                        childName={children.find(c => c.id === selectedChild)?.name || "Aprendiente"}
-                        onActivitiesUpdated={() => {
-                          fetchPersonalizedActivities();
-                        }}
-                      />
-                    </div>
-                  )}
+                    {/* Sugerencias de IA con Actividades Concretas */}
+                    {aiSuggestions?.suggestions && aiSuggestions.suggestions.length > 0 && (
+                      <div className="border rounded-lg p-4 bg-background/50">
+                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                          <Sparkles className="h-5 w-5 text-primary" />
+                          Sugerencias Personalizadas de IA
+                        </h3>
 
-                  {/* Sugerencias de IA con Actividades Concretas */}
-                  {aiSuggestions?.suggestions && aiSuggestions.suggestions.length > 0 && (
-                    <div className="border rounded-lg p-4 bg-background/50">
-                      <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                        <Sparkles className="h-5 w-5 text-primary" />
-                        Sugerencias Personalizadas de IA
-                      </h3>
-
-                      <div className="space-y-4">
-                        {aiSuggestions.suggestions.map((suggestion: any, index: number) => (
-                          <div key={index} className="border rounded-lg p-4 bg-card">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-2">
-                                <h4 className="font-semibold text-base">{suggestion.activity}</h4>
-                                <Badge variant="outline">{suggestion.type}</Badge>
-                              </div>
-                            </div>
-                            <p className="text-sm text-muted-foreground mb-3">{suggestion.description}</p>
-
-                            {/* Beneficios */}
-                            <div className="mb-3">
-                              <p className="text-sm font-medium mb-1">Beneficios:</p>
-                              <ul className="list-disc list-inside text-sm text-muted-foreground">
-                                {suggestion.benefits?.map((benefit: string, i: number) => (
-                                  <li key={i}>{benefit}</li>
-                                ))}
-                              </ul>
-                            </div>
-
-                            {/* Actividades Concretas */}
-                            {suggestion.concreteActivities && suggestion.concreteActivities.length > 0 && (
-                              <div className="border-t pt-3 mt-3">
-                                <p className="text-sm font-medium mb-2 flex items-center gap-2">
-                                  <Lightbulb className="h-4 w-4 text-yellow-500" />
-                                  Actividades Concretas:
-                                </p>
-                                <div className="space-y-3">
-                                  {suggestion.concreteActivities.map((activity: any, actIdx: number) => (
-                                    <div key={actIdx} className="bg-muted/50 rounded-lg p-3">
-                                      <div className="flex items-center justify-between mb-2">
-                                        <span className="font-medium text-sm">{activity.name}</span>
-                                        <div className="flex items-center gap-2">
-                                          <Badge variant="secondary" className="text-xs">{activity.duration}</Badge>
-                                          <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                              <Button variant="outline" size="sm" className="gap-1 h-7">
-                                                <Plus className="h-3 w-3" />
-                                                Guardar
-                                                <ChevronDown className="h-3 w-3" />
-                                              </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="w-56">
-                                              <DropdownMenuLabel>Guardar actividad</DropdownMenuLabel>
-                                              <DropdownMenuSeparator />
-                                              <DropdownMenuItem onClick={() => saveActivityFromSuggestion(suggestion, actIdx, null)}>
-                                                <Plus className="h-4 w-4 mr-2" />
-                                                Agregar como nueva
-                                              </DropdownMenuItem>
-                                              <DropdownMenuSeparator />
-                                              <DropdownMenuLabel className="text-xs text-muted-foreground">Reemplazar actividad:</DropdownMenuLabel>
-                                              {STANDARD_ACTIVITY_NAMES.map((name, stdIdx) => (
-                                                <DropdownMenuItem
-                                                  key={stdIdx}
-                                                  onClick={() => saveActivityFromSuggestion(suggestion, actIdx, stdIdx + 1)}
-                                                >
-                                                  {stdIdx + 1}. {name}
-                                                </DropdownMenuItem>
-                                              ))}
-                                            </DropdownMenuContent>
-                                          </DropdownMenu>
-                                        </div>
-                                      </div>
-
-                                      {/* Materiales */}
-                                      <div className="mb-2">
-                                        <p className="text-xs font-medium text-muted-foreground">Materiales:</p>
-                                        <p className="text-xs">{activity.materials?.join(', ')}</p>
-                                      </div>
-
-                                      {/* Pasos */}
-                                      <div>
-                                        <p className="text-xs font-medium text-muted-foreground">Pasos:</p>
-                                        <ol className="list-decimal list-inside text-xs space-y-1">
-                                          {activity.steps?.map((step: string, stepIdx: number) => (
-                                            <li key={stepIdx}>{step}</li>
-                                          ))}
-                                        </ol>
-                                      </div>
-                                    </div>
-                                  ))}
+                        <div className="space-y-4">
+                          {aiSuggestions.suggestions.map((suggestion: any, index: number) => (
+                            <div key={index} className="border rounded-lg p-4 bg-card">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-semibold text-base">{suggestion.activity}</h4>
+                                  <Badge variant="outline">{suggestion.type}</Badge>
                                 </div>
                               </div>
-                            )}
+                              <p className="text-sm text-muted-foreground mb-3">{suggestion.description}</p>
 
-                            {/* Progreso Esperado */}
-                            <div className="mt-3 text-xs text-muted-foreground bg-green-500/10 p-2 rounded">
-                              <strong>Progreso esperado:</strong> {suggestion.expectedProgress}
+                              {/* Beneficios */}
+                              <div className="mb-3">
+                                <p className="text-sm font-medium mb-1">Beneficios:</p>
+                                <ul className="list-disc list-inside text-sm text-muted-foreground">
+                                  {suggestion.benefits?.map((benefit: string, i: number) => (
+                                    <li key={i}>{benefit}</li>
+                                  ))}
+                                </ul>
+                              </div>
+
+                              {/* Actividades Concretas */}
+                              {suggestion.concreteActivities && suggestion.concreteActivities.length > 0 && (
+                                <div className="border-t pt-3 mt-3">
+                                  <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                                    <Lightbulb className="h-4 w-4 text-yellow-500" />
+                                    Actividades Concretas:
+                                  </p>
+                                  <div className="space-y-3">
+                                    {suggestion.concreteActivities.map((activity: any, actIdx: number) => (
+                                      <div key={actIdx} className="bg-muted/50 rounded-lg p-3">
+                                        <div className="flex items-center justify-between mb-2">
+                                          <span className="font-medium text-sm">{activity.name}</span>
+                                          <div className="flex items-center gap-2">
+                                            <Badge variant="secondary" className="text-xs">{activity.duration}</Badge>
+                                            <DropdownMenu>
+                                              <DropdownMenuTrigger asChild>
+                                                <Button variant="outline" size="sm" className="gap-1 h-7">
+                                                  <Plus className="h-3 w-3" />
+                                                  Guardar
+                                                  <ChevronDown className="h-3 w-3" />
+                                                </Button>
+                                              </DropdownMenuTrigger>
+                                              <DropdownMenuContent align="end" className="w-56">
+                                                <DropdownMenuLabel>Guardar actividad</DropdownMenuLabel>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem onClick={() => saveActivityFromSuggestion(suggestion, actIdx, null)}>
+                                                  <Plus className="h-4 w-4 mr-2" />
+                                                  Agregar como nueva
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuLabel className="text-xs text-muted-foreground">Reemplazar actividad:</DropdownMenuLabel>
+                                                {STANDARD_ACTIVITY_NAMES.map((name, stdIdx) => (
+                                                  <DropdownMenuItem
+                                                    key={stdIdx}
+                                                    onClick={() => saveActivityFromSuggestion(suggestion, actIdx, stdIdx + 1)}
+                                                  >
+                                                    {stdIdx + 1}. {name}
+                                                  </DropdownMenuItem>
+                                                ))}
+                                              </DropdownMenuContent>
+                                            </DropdownMenu>
+                                          </div>
+                                        </div>
+
+                                        {/* Materiales */}
+                                        <div className="mb-2">
+                                          <p className="text-xs font-medium text-muted-foreground">Materiales:</p>
+                                          <p className="text-xs">{activity.materials?.join(', ')}</p>
+                                        </div>
+
+                                        {/* Pasos */}
+                                        <div>
+                                          <p className="text-xs font-medium text-muted-foreground">Pasos:</p>
+                                          <ol className="list-decimal list-inside text-xs space-y-1">
+                                            {activity.steps?.map((step: string, stepIdx: number) => (
+                                              <li key={stepIdx}>{step}</li>
+                                            ))}
+                                          </ol>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Progreso Esperado */}
+                              <div className="mt-3 text-xs text-muted-foreground bg-green-500/10 p-2 rounded">
+                                <strong>Progreso esperado:</strong> {suggestion.expectedProgress}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Plan Semanal */}
+                        {aiSuggestions.weeklyPlan && aiSuggestions.weeklyPlan.length > 0 && (
+                          <div className="mt-4 border-t pt-4">
+                            <h4 className="font-semibold mb-3 flex items-center gap-2">
+                              📅 Plan Semanal Sugerido
+                            </h4>
+                            <div className="grid grid-cols-5 gap-2">
+                              {aiSuggestions.weeklyPlan.map((day: any, idx: number) => (
+                                <div key={idx} className="bg-muted/50 rounded p-2 text-center">
+                                  <p className="font-medium text-xs">{day.day}</p>
+                                  <p className="text-xs text-muted-foreground">{day.activity}</p>
+                                  <p className="text-xs text-primary">{day.duration}</p>
+                                </div>
+                              ))}
                             </div>
                           </div>
-                        ))}
+                        )}
                       </div>
+                    )}
 
-                      {/* Plan Semanal */}
-                      {aiSuggestions.weeklyPlan && aiSuggestions.weeklyPlan.length > 0 && (
-                        <div className="mt-4 border-t pt-4">
-                          <h4 className="font-semibold mb-3 flex items-center gap-2">
-                            📅 Plan Semanal Sugerido
-                          </h4>
-                          <div className="grid grid-cols-5 gap-2">
-                            {aiSuggestions.weeklyPlan.map((day: any, idx: number) => (
-                              <div key={idx} className="bg-muted/50 rounded p-2 text-center">
-                                <p className="font-medium text-xs">{day.day}</p>
-                                <p className="text-xs text-muted-foreground">{day.activity}</p>
-                                <p className="text-xs text-primary">{day.duration}</p>
-                              </div>
-                            ))}
-                          </div>
+                    {/* Recomendación General de IA */}
+                    {aiSuggestions?.overallRecommendation && (
+                      <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
+                        <p className="font-semibold mb-2">Recomendación General del Sistema:</p>
+                        <p className="text-sm">{aiSuggestions.overallRecommendation}</p>
+                        <div className="mt-2 flex justify-end">
+                          <Button onClick={exportSuggestionsToPDF} variant="outline" size="sm">
+                            <Download className="mr-2 h-4 w-4" />
+                            Descargar PDF Sugerencias
+                          </Button>
                         </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Recomendación General de IA */}
-                  {aiSuggestions?.overallRecommendation && (
-                    <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
-                      <p className="font-semibold mb-2">Recomendación General del Sistema:</p>
-                      <p className="text-sm">{aiSuggestions.overallRecommendation}</p>
-                      <div className="mt-2 flex justify-end">
-                        <Button onClick={exportSuggestionsToPDF} variant="outline" size="sm">
-                          <Download className="mr-2 h-4 w-4" />
-                          Descargar PDF Sugerencias
-                        </Button>
                       </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                    )}
+                  </CardContent>
+                </Card>
+              </MotionDiv>
             )}
 
             {progressPredictions && (
-              <div className="space-y-4">
+              <MotionDiv variants={itemVariants} className="space-y-4">
                 {missingQuestionnaires.length > 0 && (
                   <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
                     <div className="flex items-start gap-2">
@@ -1157,121 +1083,129 @@ const Reports = () => {
                   </Button>
                 </div>
                 <ProgressPrediction predictions={progressPredictions} />
-              </div>
+              </MotionDiv>
             )}
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Resumen General</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground">Evaluaciones</p>
-                    <p className="text-3xl font-bold">{evaluations.length}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground">Promedio General</p>
-                    <p className="text-3xl font-bold">{stats.overallAvg}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground">Primera Evaluación</p>
-                    <p className="text-lg font-semibold">
-                      {new Date(evaluations[0].evaluation_date).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground">Última Evaluación</p>
-                    <p className="text-lg font-semibold">
-                      {new Date(evaluations[evaluations.length - 1].evaluation_date).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <div data-tutorial="progress-tracker">
-              <ProgressTracker evaluations={evaluations} activities={ACTIVITIES} />
-            </div>
-
-            <IntervalComparison evaluations={evaluations} activities={ACTIVITIES} />
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Estadísticas por Actividad</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {stats.stats.map((stat, index) => (
-                    <div key={index} className="border-b last:border-0 pb-4 last:pb-0">
-                      <h4 className="font-medium mb-2">{stat.activity}</h4>
-                      <div className="grid grid-cols-4 gap-4 text-sm">
-                        <div>
-                          <p className="text-muted-foreground">Promedio</p>
-                          <p className="font-semibold">{stat.avg}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Mínimo</p>
-                          <p className="font-semibold">{stat.min || "N/A"}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Máximo</p>
-                          <p className="font-semibold">{stat.max || "N/A"}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Evaluaciones</p>
-                          <p className="font-semibold">{stat.count}</p>
-                        </div>
-                      </div>
+            <MotionDiv variants={itemVariants}>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Resumen General</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground">Evaluaciones</p>
+                      <p className="text-3xl font-bold">{evaluations.length}</p>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground">Promedio General</p>
+                      <p className="text-3xl font-bold">{stats.overallAvg}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground">Primera Evaluación</p>
+                      <p className="text-lg font-semibold">
+                        {new Date(evaluations[0].evaluation_date).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground">Última Evaluación</p>
+                      <p className="text-lg font-semibold">
+                        {new Date(evaluations[evaluations.length - 1].evaluation_date).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </MotionDiv>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Historial de Evaluaciones</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {evaluations.map((evaluation) => {
-                    const scores = [
-                      evaluation.test_1_score,
-                      evaluation.test_2_score,
-                      evaluation.test_3_score,
-                      evaluation.test_4_score,
-                      evaluation.test_5_score,
-                      evaluation.test_6_score,
-                      evaluation.test_7_score,
-                      evaluation.test_8_score
-                    ].filter(s => s !== null) as number[];
+            <MotionDiv variants={itemVariants} data-tutorial="progress-tracker">
+              <ProgressTracker evaluations={evaluations} activities={ACTIVITIES} />
+            </MotionDiv>
 
-                    const avg = scores.length > 0
-                      ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2)
-                      : "N/A";
+            <MotionDiv variants={itemVariants}>
+              <IntervalComparison evaluations={evaluations} activities={ACTIVITIES} />
+            </MotionDiv>
 
-                    return (
-                      <div key={evaluation.id} className="flex items-center justify-between border p-3 rounded">
-                        <div>
-                          <p className="font-medium">
-                            {new Date(evaluation.evaluation_date).toLocaleDateString()}
-                          </p>
-                          {evaluation.observations && (
-                            <p className="text-sm text-muted-foreground">{evaluation.observations}</p>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm text-muted-foreground">Promedio</p>
-                          <p className="text-2xl font-bold">{avg}</p>
+            <MotionDiv variants={itemVariants}>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Estadísticas por Actividad</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {stats.stats.map((stat, index) => (
+                      <div key={index} className="border-b last:border-0 pb-4 last:pb-0">
+                        <h4 className="font-medium mb-2">{stat.activity}</h4>
+                        <div className="grid grid-cols-4 gap-4 text-sm">
+                          <div>
+                            <p className="text-muted-foreground">Promedio</p>
+                            <p className="font-semibold">{stat.avg}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Mínimo</p>
+                            <p className="font-semibold">{stat.min || "N/A"}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Máximo</p>
+                            <p className="font-semibold">{stat.max || "N/A"}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Evaluaciones</p>
+                            <p className="font-semibold">{stat.count}</p>
+                          </div>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </MotionDiv>
+
+            <MotionDiv variants={itemVariants}>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Historial de Evaluaciones</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {evaluations.map((evaluation) => {
+                      const scores = [
+                        evaluation.test_1_score,
+                        evaluation.test_2_score,
+                        evaluation.test_3_score,
+                        evaluation.test_4_score,
+                        evaluation.test_5_score,
+                        evaluation.test_6_score,
+                        evaluation.test_7_score,
+                        evaluation.test_8_score
+                      ].filter(s => s !== null) as number[];
+
+                      const avg = scores.length > 0
+                        ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2)
+                        : "N/A";
+
+                      return (
+                        <div key={evaluation.id} className="flex items-center justify-between border p-3 rounded">
+                          <div>
+                            <p className="font-medium">
+                              {new Date(evaluation.evaluation_date).toLocaleDateString()}
+                            </p>
+                            {evaluation.observations && (
+                              <p className="text-sm text-muted-foreground">{evaluation.observations}</p>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm text-muted-foreground">Promedio</p>
+                            <p className="text-2xl font-bold">{avg}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            </MotionDiv>
+          </MotionDiv>
         )}
       </main>
 

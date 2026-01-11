@@ -28,6 +28,7 @@ import { queueOfflineOperation } from "@/lib/offlineSync";
 import { useTutorial } from "@/components/tutorial/TutorialProvider";
 import { evaluationsTutorial } from "@/components/tutorial/tutorials";
 import { TutorialButton } from "@/components/tutorial/TutorialButton";
+import { motion, Variants } from "framer-motion";
 
 interface Child {
   id: string;
@@ -480,12 +481,44 @@ const Evaluations = () => {
     return null;
   }
 
+  // Animation variants
+  const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants: Variants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: { type: "spring", stiffness: 300, damping: 24 }
+    }
+  };
+
+  const MotionDiv = motion.div;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted to-background">
       <header className="border-b bg-card shadow-soft sticky top-0 z-30">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <MotionDiv
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.4 }}
+          className="container mx-auto px-4 py-4 flex items-center justify-between"
+        >
           <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={() => navigate("/dashboard")} className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => navigate("/dashboard")}
+              className="gap-2 bg-white/10 hover:bg-white/20 hover:text-primary transition-all"
+            >
               <ArrowLeft className="h-4 w-4" />
               <span className="hidden sm:inline">Volver al Panel</span>
             </Button>
@@ -576,7 +609,7 @@ const Evaluations = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        </div>
+        </MotionDiv>
 
         {/* Global Inputs/Dialogs kept in header for state scope access */}
         <input
@@ -605,156 +638,181 @@ const Evaluations = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Evaluaciones</h1>
-          <p className="text-muted-foreground">
-            Administra las evaluaciones de motricidad fina
-          </p>
-        </div>
-
-        {!loading && evaluations.length > 0 && (
-          <div className="mb-6 grid gap-4 md:grid-cols-3" data-tutorial="evaluation-filters">
-            <div>
-              <Label htmlFor="month-filter" className="mb-2 block">Filtrar por mes</Label>
-              <Select value={monthFilter} onValueChange={setMonthFilter}>
-                <SelectTrigger id="month-filter" className="bg-card">
-                  <SelectValue placeholder="Todos los meses" />
-                </SelectTrigger>
-                <SelectContent className="bg-card">
-                  <SelectItem value="all">Todos los meses</SelectItem>
-                  {monthOptions.map((month) => {
-                    const [year, monthNum] = month.split('-');
-                    const monthName = new Date(parseInt(year), parseInt(monthNum) - 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
-                    return <SelectItem key={month} value={month}>{monthName}</SelectItem>;
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="grade-filter" className="mb-2 block">Filtrar por grado</Label>
-              <Select value={gradeFilter} onValueChange={setGradeFilter}>
-                <SelectTrigger id="grade-filter" className="bg-card">
-                  <SelectValue placeholder="Todos los grados" />
-                </SelectTrigger>
-                <SelectContent className="bg-card">
-                  <SelectItem value="all">Todos los grados</SelectItem>
-                  {gradeOptions.map((grade) => (
-                    <SelectItem key={grade} value={grade!}>{grade}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="child-filter" className="mb-2 block">Filtrar por alumno</Label>
-              <Select value={childFilter} onValueChange={setChildFilter}>
-                <SelectTrigger id="child-filter" className="bg-card">
-                  <SelectValue placeholder="Todos los alumnos" />
-                </SelectTrigger>
-                <SelectContent className="bg-card">
-                  <SelectItem value="all">Todos los alumnos</SelectItem>
-                  {children.map((child) => (
-                    <SelectItem key={child.id} value={child.id}>{child.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        )}
-
-        {loading ? (
-          <Card className="p-6">
-            <p className="text-center text-muted-foreground">Cargando...</p>
-          </Card>
-        ) : children.length === 0 ? (
-          <Card className="p-6">
-            <p className="text-center text-muted-foreground">
-              Primero debe registrar aprendientes en la sección de "Gestión de Aprendientes"
+        <MotionDiv
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          <MotionDiv
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="mb-8"
+          >
+            <h1 className="text-3xl font-bold mb-2">Evaluaciones</h1>
+            <p className="text-muted-foreground">
+              Administra las evaluaciones de motricidad fina
             </p>
-          </Card>
-        ) : evaluations.length === 0 ? (
-          <Card className="p-6">
-            <p className="text-center text-muted-foreground">
-              No hay evaluaciones registradas. Haga clic en "Nueva Evaluación" para comenzar.
-            </p>
-          </Card>
-        ) : (
-          <>
-            <div className="mb-4 text-sm text-muted-foreground">
-              Mostrando {displayedEvaluations.length} de {filteredEvaluations.length} evaluaciones
-            </div>
-            <div className="grid gap-4" data-tutorial="evaluations-table">
-              {displayedEvaluations.map((evaluation) => (
-                <Card key={evaluation.id}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle>{evaluation.children.name}</CardTitle>
-                        <CardDescription>
-                          {new Date(evaluation.evaluation_date).toLocaleDateString()}
-                        </CardDescription>
-                      </div>
-                      <div className="flex flex-col items-end gap-1">
-                        <Badge variant="outline" className="text-lg font-bold">
-                          Promedio: {calculateAverage(evaluation).average}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {calculateAverage(evaluation).completed} de {calculateAverage(evaluation).total} actividades
-                        </span>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                      {ACTIVITIES.map((activity) => {
-                        const score = evaluation[`test_${activity.id}_score` as keyof Evaluation] as number | null;
-                        const { label, color } = getScoreLabel(score);
-                        return (
-                          <div key={activity.id} className="text-sm">
-                            <p className="font-medium truncate">{activity.name}</p>
-                            <Badge variant={color as any}>{label}</Badge>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedEvaluation(evaluation);
-                          setViewDialogOpen(true);
-                        }}
-                        data-tutorial="view-evaluation-btn"
-                      >
-                        <Eye className="mr-2 h-4 w-4" />
-                        Ver Detalles
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDownloadPDF(evaluation)}
-                        data-tutorial="download-pdf-btn"
-                      >
-                        <Download className="mr-2 h-4 w-4" />
-                        Descargar PDF
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-            {displayedEvaluations.length < filteredEvaluations.length && (
-              <div className="mt-6 text-center">
-                <Button
-                  variant="outline"
-                  onClick={() => setDisplayLimit(prev => prev + 50)}
-                >
-                  Cargar más evaluaciones ({filteredEvaluations.length - displayedEvaluations.length} restantes)
-                </Button>
+          </MotionDiv>
+
+          {!loading && evaluations.length > 0 && (
+            <MotionDiv
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="mb-6 grid gap-4 md:grid-cols-3"
+              data-tutorial="evaluation-filters"
+            >
+              <div>
+                <Label htmlFor="month-filter" className="mb-2 block">Filtrar por mes</Label>
+                <Select value={monthFilter} onValueChange={setMonthFilter}>
+                  <SelectTrigger id="month-filter" className="bg-card">
+                    <SelectValue placeholder="Todos los meses" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card">
+                    <SelectItem value="all">Todos los meses</SelectItem>
+                    {monthOptions.map((month) => {
+                      const [year, monthNum] = month.split('-');
+                      const monthName = new Date(parseInt(year), parseInt(monthNum) - 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+                      return <SelectItem key={month} value={month}>{monthName}</SelectItem>;
+                    })}
+                  </SelectContent>
+                </Select>
               </div>
-            )}
-          </>
-        )}
+              <div>
+                <Label htmlFor="grade-filter" className="mb-2 block">Filtrar por grado</Label>
+                <Select value={gradeFilter} onValueChange={setGradeFilter}>
+                  <SelectTrigger id="grade-filter" className="bg-card">
+                    <SelectValue placeholder="Todos los grados" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card">
+                    <SelectItem value="all">Todos los grados</SelectItem>
+                    {gradeOptions.map((grade) => (
+                      <SelectItem key={grade} value={grade!}>{grade}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="child-filter" className="mb-2 block">Filtrar por alumno</Label>
+                <Select value={childFilter} onValueChange={setChildFilter}>
+                  <SelectTrigger id="child-filter" className="bg-card">
+                    <SelectValue placeholder="Todos los alumnos" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card">
+                    <SelectItem value="all">Todos los alumnos</SelectItem>
+                    {children.map((child) => (
+                      <SelectItem key={child.id} value={child.id}>{child.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </MotionDiv>
+          )}
+
+          {loading ? (
+            <Card className="p-6">
+              <p className="text-center text-muted-foreground">Cargando...</p>
+            </Card>
+          ) : children.length === 0 ? (
+            <Card className="p-6">
+              <p className="text-center text-muted-foreground">
+                Primero debe registrar aprendientes en la sección de "Gestión de Aprendientes"
+              </p>
+            </Card>
+          ) : evaluations.length === 0 ? (
+            <Card className="p-6">
+              <p className="text-center text-muted-foreground">
+                No hay evaluaciones registradas. Haga clic en "Nueva Evaluación" para comenzar.
+              </p>
+            </Card>
+          ) : (
+            <>
+              <div className="mb-4 text-sm text-muted-foreground">
+                Mostrando {displayedEvaluations.length} de {filteredEvaluations.length} evaluaciones
+              </div>
+              <MotionDiv
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                className="grid gap-4"
+                data-tutorial="evaluations-table"
+              >
+                {displayedEvaluations.map((evaluation) => (
+                  <MotionDiv key={evaluation.id} variants={itemVariants}>
+                    <Card className="h-full">
+                      <CardHeader>
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <CardTitle>{evaluation.children.name}</CardTitle>
+                            <CardDescription>
+                              {new Date(evaluation.evaluation_date).toLocaleDateString()}
+                            </CardDescription>
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            <Badge variant="outline" className="text-lg font-bold">
+                              Promedio: {calculateAverage(evaluation).average}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {calculateAverage(evaluation).completed} de {calculateAverage(evaluation).total} actividades
+                            </span>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                          {ACTIVITIES.map((activity) => {
+                            const score = evaluation[`test_${activity.id}_score` as keyof Evaluation] as number | null;
+                            const { label, color } = getScoreLabel(score);
+                            return (
+                              <div key={activity.id} className="text-sm">
+                                <p className="font-medium truncate">{activity.name}</p>
+                                <Badge variant={color as any}>{label}</Badge>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedEvaluation(evaluation);
+                              setViewDialogOpen(true);
+                            }}
+                            data-tutorial="view-evaluation-btn"
+                          >
+                            <Eye className="mr-2 h-4 w-4" />
+                            Ver Detalles
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDownloadPDF(evaluation)}
+                            data-tutorial="download-pdf-btn"
+                          >
+                            <Download className="mr-2 h-4 w-4" />
+                            Descargar PDF
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </MotionDiv>
+                ))}
+              </MotionDiv>
+              {displayedEvaluations.length < filteredEvaluations.length && (
+                <div className="mt-6 text-center">
+                  <Button
+                    variant="outline"
+                    onClick={() => setDisplayLimit(prev => prev + 50)}
+                  >
+                    Cargar más evaluaciones ({filteredEvaluations.length - displayedEvaluations.length} restantes)
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
+        </MotionDiv>
       </main>
 
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>

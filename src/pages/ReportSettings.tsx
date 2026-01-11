@@ -19,6 +19,7 @@ import { ReportSectionEditor, type ReportSection } from "@/components/reports/Re
 import { useTutorial } from "@/components/tutorial/TutorialProvider";
 import { reportSettingsTutorial } from "@/components/tutorial/tutorials";
 import { TutorialButton } from "@/components/tutorial/TutorialButton";
+import { motion, Variants } from "framer-motion";
 
 interface ReportSettingsData {
   id: string;
@@ -45,6 +46,30 @@ const ReportSettings: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { startTutorial } = useTutorial();
+
+  // Animation variants
+  const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants: Variants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: { type: "spring", stiffness: 300, damping: 24 }
+    }
+  };
+
+  const MotionDiv = motion.div;
+
   const [isAdmin, setIsAdmin] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
 
@@ -971,400 +996,386 @@ const ReportSettings: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card shadow-sm">
-        <div className="container mx-auto px-4 md:px-6 py-3 md:py-4">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
-            <div className="flex items-center gap-3 md:gap-4">
-              <Button variant="ghost" onClick={() => navigate("/dashboard")} className="shrink-0">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Volver al Panel
-              </Button>
-              <div>
-                <h1 className="text-lg md:text-xl font-semibold">Editor de Reportes</h1>
-                <p className="text-xs md:text-sm text-muted-foreground">v1.0</p>
+      <header className="border-b bg-card sticky top-0 z-30">
+        <MotionDiv
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.4 }}
+          className="container mx-auto px-4 py-4 flex items-center justify-between"
+        >
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              onClick={() => navigate("/dashboard")}
+              className="bg-white/10 hover:bg-white/20 hover:text-primary transition-all gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Volver al Panel</span>
+            </Button>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Settings className="h-6 w-6 text-primary" />
               </div>
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <Select
-                value={settings.report_type}
-                onValueChange={(value: ReportType) => {
-                  const template = getReportTypeTemplate(value);
-                  if (template) {
-                    setSettings({
-                      ...settings,
-                      report_type: value,
-                      ...template.defaultConfig
-                    });
-                    toast({
-                      title: "Plantilla aplicada",
-                      description: `Se aplicó la plantilla "${template.name}"`
-                    });
-                  }
-                }}
-                data-tutorial="report-type-selector"
-              >
-                <SelectTrigger className="w-[180px] md:w-[240px] h-9">
-                  <SelectValue placeholder="Tipo de reporte" />
-                </SelectTrigger>
-                <SelectContent>
-                  {reportTypeTemplates.map((template) => (
-                    <SelectItem key={template.id} value={template.id}>
-                      <span className="flex items-center gap-2">
-                        <span>{template.icon}</span>
-                        <span>{template.name}</span>
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleSave}
-                disabled={saving}
-                className="gap-2 relative"
-                data-tutorial="save-btn"
-              >
-                <Save className="h-4 w-4" />
-                <span className="hidden sm:inline">{saving ? "Guardando..." : "Guardar Cambios"}</span>
-                <span className="sm:hidden">{saving ? "..." : "Guardar"}</span>
-              </Button>
+              <h1 className="text-2xl font-bold text-foreground">Editor de PDF y Reportes</h1>
             </div>
           </div>
-        </div>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              className="bg-primary hover:bg-primary/90 transition-all gap-2"
+              data-tutorial="save-settings-btn"
+            >
+              <Save className="h-4 w-4" />
+              <span className="hidden sm:inline">{saving ? "Guardando..." : "Guardar Cambios"}</span>
+            </Button>
+          </div>
+        </MotionDiv>
       </header>
 
-      {/* Info Banner */}
-      <div className="bg-primary/5 border-b border-primary/20 px-4 py-2">
-        <p className="text-xs text-center text-muted-foreground">
-          💡 <strong>Importante:</strong> Después de cambiar el tipo de reporte o cualquier configuración, haz clic en <strong>"Guardar Cambios"</strong> para aplicar los ajustes al PDF final. La vista previa es solo una demostración temporal.
-        </p>
-      </div>
-
-      <div className="flex flex-col lg:flex-row h-[calc(100vh-89px)] md:h-[calc(100vh-89px)]">
-        {/* Left Sidebar - Configuration */}
-        <aside className="w-full lg:w-80 border-b lg:border-b-0 lg:border-r bg-card overflow-y-auto max-h-[50vh] lg:max-h-none">
-          <div className="p-6 space-y-6">
-            {/* Header */}
-            <div className="flex items-center gap-3 pb-4 border-b">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Settings className="h-5 w-5 text-primary" />
-              </div>
-              <h2 className="text-lg font-semibold">Configuración</h2>
-            </div>
-
-            {/* Template Selection */}
-            <div className="space-y-3" data-tutorial="template-selector">
-              <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-                PLANTILLA
-              </Label>
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  onClick={() => setSettings({ ...settings, template: 'classic' })}
-                  className={`p-4 border-2 rounded-lg transition-all ${settings.template === 'classic'
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-primary/50'
-                    }`}
-                >
-                  <div className="w-full h-16 bg-muted rounded mb-2" />
-                  <p className="text-xs font-medium text-center">Classic</p>
-                </button>
-                <button
-                  onClick={() => setSettings({ ...settings, template: 'modern' })}
-                  className={`p-4 border-2 rounded-lg transition-all ${settings.template === 'modern'
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-primary/50'
-                    }`}
-                >
-                  <div className="w-full h-16 bg-foreground rounded mb-2" />
-                  <p className="text-xs font-medium text-center">Modern</p>
-                </button>
-                <button
-                  onClick={() => setSettings({ ...settings, template: 'minimal' })}
-                  className={`p-4 border-2 rounded-lg transition-all ${settings.template === 'minimal'
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-primary/50'
-                    }`}
-                >
-                  <div className="w-full h-16 border-2 border-muted rounded mb-2" />
-                  <p className="text-xs font-medium text-center">Minimal</p>
-                </button>
-              </div>
-            </div>
-
-            {/* Branding */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-primary/10 rounded">
-                  <div className="h-4 w-4 rounded-full" style={{ backgroundColor: settings.primary_color }} />
+      <main className="container mx-auto px-4 py-8">
+        <MotionDiv
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 lg:grid-cols-12 gap-8"
+        >
+          {/* Left Column: Editor Controls */}
+          <MotionDiv variants={itemVariants} className="lg:col-span-5 space-y-6">
+            <Card className="p-6">
+              {/* Header */}
+              <div className="flex items-center gap-3 pb-4 border-b">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Settings className="h-5 w-5 text-primary" />
                 </div>
-                <h3 className="font-medium">Branding Corporativo</h3>
+                <h2 className="text-lg font-semibold">Configuración</h2>
               </div>
 
-              {/* Color Picker */}
-              <div className="space-y-2" data-tutorial="color-picker">
+              {/* Template Selection */}
+              <div className="space-y-3" data-tutorial="template-selector">
                 <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-                  COLOR DE MARCA
+                  PLANTILLA
                 </Label>
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-12 h-12 rounded-lg border-2 border-border cursor-pointer"
-                    style={{ backgroundColor: settings.primary_color }}
-                    onClick={() => document.getElementById('color-picker')?.click()}
-                  />
-                  <div className="flex-1">
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    onClick={() => setSettings({ ...settings, template: 'classic' })}
+                    className={`p-4 border-2 rounded-lg transition-all ${settings.template === 'classic'
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-primary/50'
+                      }`}
+                  >
+                    <div className="w-full h-16 bg-muted rounded mb-2" />
+                    <p className="text-xs font-medium text-center">Classic</p>
+                  </button>
+                  <button
+                    onClick={() => setSettings({ ...settings, template: 'modern' })}
+                    className={`p-4 border-2 rounded-lg transition-all ${settings.template === 'modern'
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-primary/50'
+                      }`}
+                  >
+                    <div className="w-full h-16 bg-foreground rounded mb-2" />
+                    <p className="text-xs font-medium text-center">Modern</p>
+                  </button>
+                  <button
+                    onClick={() => setSettings({ ...settings, template: 'minimal' })}
+                    className={`p-4 border-2 rounded-lg transition-all ${settings.template === 'minimal'
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-primary/50'
+                      }`}
+                  >
+                    <div className="w-full h-16 border-2 border-muted rounded mb-2" />
+                    <p className="text-xs font-medium text-center">Minimal</p>
+                  </button>
+                </div>
+              </div>
+
+              {/* Branding */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-primary/10 rounded">
+                    <div className="h-4 w-4 rounded-full" style={{ backgroundColor: settings.primary_color }} />
+                  </div>
+                  <h3 className="font-medium">Branding Corporativo</h3>
+                </div>
+
+                {/* Color Picker */}
+                <div className="space-y-2" data-tutorial="color-picker">
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                    COLOR DE MARCA
+                  </Label>
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-12 h-12 rounded-lg border-2 border-border cursor-pointer"
+                      style={{ backgroundColor: settings.primary_color }}
+                      onClick={() => document.getElementById('color-picker')?.click()}
+                    />
+                    <div className="flex-1">
+                      <Input
+                        id="color-picker"
+                        type="color"
+                        value={settings.primary_color}
+                        onChange={(e) => setSettings({ ...settings, primary_color: e.target.value })}
+                        className="hidden"
+                      />
+                      <Input
+                        type="text"
+                        value={settings.primary_color.toUpperCase()}
+                        onChange={(e) => setSettings({ ...settings, primary_color: e.target.value })}
+                        className="font-mono text-sm"
+                        placeholder="#8EB8B5"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Logos Header */}
+                <div className="space-y-3" data-tutorial="logo-upload">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                      LOGOTIPOS (PORTADA)
+                    </Label>
+                    <span className="text-xs text-muted-foreground">
+                      {settings.logo_urls.length} guardados
+                    </span>
+                  </div>
+
+                  {/* Logo Grid */}
+                  {settings.logo_urls.length > 0 && (
+                    <div className="grid grid-cols-3 gap-2">
+                      {settings.logo_urls.map((url, index) => (
+                        <div
+                          key={index}
+                          className="relative group aspect-square border-2 border-primary/20 rounded-lg overflow-hidden bg-card p-2"
+                        >
+                          <img
+                            src={url}
+                            alt={`Logo ${index + 1}`}
+                            className="w-full h-full object-contain"
+                          />
+                          <button
+                            onClick={() => handleDeleteLogo(index)}
+                            className="absolute inset-0 bg-destructive/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive-foreground" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Upload Button */}
+                  <label className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-primary/30 rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+                    <Upload className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-medium text-primary">Subir logo portada</span>
                     <Input
-                      id="color-picker"
-                      type="color"
-                      value={settings.primary_color}
-                      onChange={(e) => setSettings({ ...settings, primary_color: e.target.value })}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleLogoUpload}
                       className="hidden"
                     />
-                    <Input
-                      type="text"
-                      value={settings.primary_color.toUpperCase()}
-                      onChange={(e) => setSettings({ ...settings, primary_color: e.target.value })}
-                      className="font-mono text-sm"
-                      placeholder="#8EB8B5"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Logos Header */}
-              <div className="space-y-3" data-tutorial="logo-upload">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-                    LOGOTIPOS (PORTADA)
-                  </Label>
-                  <span className="text-xs text-muted-foreground">
-                    {settings.logo_urls.length} guardados
-                  </span>
-                </div>
-
-                {/* Logo Grid */}
-                {settings.logo_urls.length > 0 && (
-                  <div className="grid grid-cols-3 gap-2">
-                    {settings.logo_urls.map((url, index) => (
-                      <div
-                        key={index}
-                        className="relative group aspect-square border-2 border-primary/20 rounded-lg overflow-hidden bg-card p-2"
-                      >
-                        <img
-                          src={url}
-                          alt={`Logo ${index + 1}`}
-                          className="w-full h-full object-contain"
-                        />
-                        <button
-                          onClick={() => handleDeleteLogo(index)}
-                          className="absolute inset-0 bg-destructive/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive-foreground" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Upload Button */}
-                <label className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-primary/30 rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
-                  <Upload className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-medium text-primary">Subir logo portada</span>
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleLogoUpload}
-                    className="hidden"
-                  />
-                </label>
-                <p className="text-xs text-muted-foreground">
-                  Aparecen en portada. Máx: 2MB
-                </p>
-              </div>
-
-              {/* Gemini Charts Toggle */}
-              <div className="space-y-3 pt-4 border-t">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-sm font-medium">Gráficos con IA</Label>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Generar gráficos profesionales usando Gemini API
-                    </p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={settings.use_gemini_charts}
-                      onChange={(e) => setSettings({ ...settings, use_gemini_charts: e.target.checked })}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                   </label>
-                </div>
-              </div>
-
-              {/* Logos Footer */}
-              <div className="space-y-3 pt-4 border-t" data-tutorial="footer-logo-upload">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-                    LOGOTIPOS (PIE DE PÁGINA)
-                  </Label>
-                  <span className="text-xs text-muted-foreground">
-                    {settings.footer_logo_urls.length} guardados
-                  </span>
+                  <p className="text-xs text-muted-foreground">
+                    Aparecen en portada. Máx: 2MB
+                  </p>
                 </div>
 
-                {/* Footer Logo Grid */}
-                {settings.footer_logo_urls.length > 0 && (
-                  <div className="grid grid-cols-3 gap-2">
-                    {settings.footer_logo_urls.map((url, index) => (
-                      <div
-                        key={index}
-                        className="relative group aspect-square border-2 border-primary/20 rounded-lg overflow-hidden bg-card p-2"
-                      >
-                        <img
-                          src={url}
-                          alt={`Footer Logo ${index + 1}`}
-                          className="w-full h-full object-contain"
-                        />
-                        <button
-                          onClick={() => handleDeleteFooterLogo(index)}
-                          className="absolute inset-0 bg-destructive/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive-foreground" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Upload Button Footer */}
-                <label className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-primary/30 rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
-                  <Upload className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-medium text-primary">Subir logo pie de página</span>
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleFooterLogoUpload}
-                    className="hidden"
-                  />
-                </label>
-                <p className="text-xs text-muted-foreground">
-                  Aparecen en páginas internas. Máx: 2MB
-                </p>
-              </div>
-            </div>
-
-            {/* Content Customization Section */}
-            <div className="space-y-6 pt-6 border-t">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <FileText className="h-4 w-4 text-primary" />
-                </div>
-                <h3 className="font-medium">Contenido del Reporte</h3>
-              </div>
-
-              {/* Report Type Info */}
-              <div className="space-y-3">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-                  TIPO DE REPORTE ACTUAL
-                </Label>
-                <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
-                  <div className="flex items-start gap-3">
-                    <span className="text-3xl">{getReportTypeTemplate(settings.report_type)?.icon}</span>
-                    <div className="flex-1">
-                      <p className="font-semibold text-sm mb-1">
-                        {getReportTypeTemplate(settings.report_type)?.name}
+                {/* Gemini Charts Toggle */}
+                <div className="space-y-3 pt-4 border-t">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-sm font-medium">Gráficos con IA</Label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Generar gráficos profesionales usando Gemini API
                       </p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={settings.use_gemini_charts}
+                        onChange={(e) => setSettings({ ...settings, use_gemini_charts: e.target.checked })}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Logos Footer */}
+                <div className="space-y-3 pt-4 border-t" data-tutorial="footer-logo-upload">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                      LOGOTIPOS (PIE DE PÁGINA)
+                    </Label>
+                    <span className="text-xs text-muted-foreground">
+                      {settings.footer_logo_urls.length} guardados
+                    </span>
+                  </div>
+
+                  {/* Footer Logo Grid */}
+                  {settings.footer_logo_urls.length > 0 && (
+                    <div className="grid grid-cols-3 gap-2">
+                      {settings.footer_logo_urls.map((url, index) => (
+                        <div
+                          key={index}
+                          className="relative group aspect-square border-2 border-primary/20 rounded-lg overflow-hidden bg-card p-2"
+                        >
+                          <img
+                            src={url}
+                            alt={`Footer Logo ${index + 1}`}
+                            className="w-full h-full object-contain"
+                          />
+                          <button
+                            onClick={() => handleDeleteFooterLogo(index)}
+                            className="absolute inset-0 bg-destructive/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive-foreground" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Upload Button Footer */}
+                  <label className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-primary/30 rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+                    <Upload className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-medium text-primary">Subir logo pie de página</span>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleFooterLogoUpload}
+                      className="hidden"
+                    />
+                  </label>
+                  <p className="text-xs text-muted-foreground">
+                    Aparecen en páginas internas. Máx: 2MB
+                  </p>
+                </div>
+              </div>
+
+              {/* Content Customization Section */}
+              <div className="space-y-6 pt-6 border-t">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <FileText className="h-4 w-4 text-primary" />
+                  </div>
+                  <h3 className="font-medium">Contenido del Reporte</h3>
+                </div>
+
+                {/* Report Type Info */}
+                <div className="space-y-3">
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                    TIPO DE REPORTE ACTUAL
+                  </Label>
+                  <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <span className="text-3xl">{getReportTypeTemplate(settings.report_type)?.icon}</span>
+                      <div className="flex-1">
+                        <p className="font-semibold text-sm mb-1">
+                          {getReportTypeTemplate(settings.report_type)?.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {getReportTypeTemplate(settings.report_type)?.description}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    💡 Cambia el tipo de reporte en el selector superior para aplicar configuraciones predefinidas
+                  </p>
+                </div>
+
+                {/* Section Order Editor */}
+                <div className="pt-6 border-t" data-tutorial="section-editor">
+                  <ReportSectionEditor
+                    sections={reportSections}
+                    onSectionsChange={handleSectionsChange}
+                  />
+                </div>
+
+                {/* Company Info */}
+                <div className="space-y-3" data-tutorial="content-fields">
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                    INFORMACIÓN INSTITUCIONAL
+                  </Label>
+                  <div className="space-y-2">
+                    <Input
+                      placeholder="Nombre de la Institución"
+                      value={settings.content_company_name || ''}
+                      onChange={(e) => setSettings({ ...settings, content_company_name: e.target.value })}
+                      className="text-sm"
+                    />
+                    <Input
+                      placeholder="Responsable/Evaluador"
+                      value={settings.content_responsible_agent || ''}
+                      onChange={(e) => setSettings({ ...settings, content_responsible_agent: e.target.value })}
+                      className="text-sm"
+                    />
+                    <div className="p-3 bg-muted/50 rounded-lg">
                       <p className="text-xs text-muted-foreground">
-                        {getReportTypeTemplate(settings.report_type)?.description}
+                        📅 <strong>Fecha automática:</strong> La fecha del reporte se genera automáticamente al momento de creación
                       </p>
                     </div>
                   </div>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  💡 Cambia el tipo de reporte en el selector superior para aplicar configuraciones predefinidas
-                </p>
-              </div>
 
-              {/* Section Order Editor */}
-              <div className="pt-6 border-t" data-tutorial="section-editor">
-                <ReportSectionEditor
-                  sections={reportSections}
-                  onSectionsChange={handleSectionsChange}
-                />
-              </div>
+                {/* Dynamic Content Sections based on Report Type */}
+                {(() => {
+                  const template = getReportTypeTemplate(settings.report_type);
+                  if (!template || !template.custom_sections) return null;
 
-              {/* Company Info */}
-              <div className="space-y-3" data-tutorial="content-fields">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-                  INFORMACIÓN INSTITUCIONAL
-                </Label>
-                <div className="space-y-2">
-                  <Input
-                    placeholder="Nombre de la Institución"
-                    value={settings.content_company_name || ''}
-                    onChange={(e) => setSettings({ ...settings, content_company_name: e.target.value })}
-                    className="text-sm"
-                  />
-                  <Input
-                    placeholder="Responsable/Evaluador"
-                    value={settings.content_responsible_agent || ''}
-                    onChange={(e) => setSettings({ ...settings, content_responsible_agent: e.target.value })}
-                    className="text-sm"
-                  />
-                  <div className="p-3 bg-muted/50 rounded-lg">
-                    <p className="text-xs text-muted-foreground">
-                      📅 <strong>Fecha automática:</strong> La fecha del reporte se genera automáticamente al momento de creación
-                    </p>
-                  </div>
+                  return template.custom_sections.map((section) => (
+                    <div key={section.id} className="space-y-2">
+                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                        {section.title}
+                      </Label>
+                      {section.description && (
+                        <p className="text-xs text-muted-foreground mb-1">
+                          {section.description}
+                        </p>
+                      )}
+                      <Textarea
+                        placeholder={`Contenido de ${section.title.toLowerCase()}...`}
+                        value={(settings as any)[`content_${section.id}_text`] || ''}
+                        onChange={(e) => setSettings({
+                          ...settings,
+                          [`content_${section.id}_text`]: e.target.value
+                        })}
+                        className="text-sm resize-none"
+                        rows={3}
+                      />
+                    </div>
+                  ));
+                })()}
+              </div>
+            </Card>
+          </MotionDiv>
+
+          {/* Right Column: Preview */}
+          <MotionDiv variants={itemVariants} className="lg:col-span-7">
+            <div className="sticky top-24">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  <h2 className="text-xl font-semibold">Vista Previa</h2>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Tipo: {settings.report_type === 'prediccion' ? 'Predicción' : settings.report_type === 'chaea' ? 'Estilo de Aprendizaje' : 'Historial'}
                 </div>
               </div>
-
-              {/* Dynamic Content Sections based on Report Type */}
-              {(() => {
-                const template = getReportTypeTemplate(settings.report_type);
-                if (!template || !template.custom_sections) return null;
-
-                return template.custom_sections.map((section) => (
-                  <div key={section.id} className="space-y-2">
-                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-                      {section.title}
-                    </Label>
-                    {section.description && (
-                      <p className="text-xs text-muted-foreground mb-1">
-                        {section.description}
-                      </p>
-                    )}
-                    <Textarea
-                      placeholder={`Contenido de ${section.title.toLowerCase()}...`}
-                      value={(settings as any)[`content_${section.id}_text`] || ''}
-                      onChange={(e) => setSettings({
-                        ...settings,
-                        [`content_${section.id}_text`]: e.target.value
-                      })}
-                      className="text-sm resize-none"
-                      rows={3}
-                    />
+              <Card className="overflow-hidden bg-muted/30 border-dashed border-2 min-h-[800px] flex flex-col">
+                <div className="h-full overflow-auto p-2 md:p-4">
+                  <div className="max-w-5xl mx-auto">
+                    <ReportPreview settings={settings} />
                   </div>
-                ));
-              })()}
+                </div>
+              </Card>
             </div>
-          </div>
-        </aside>
-
-        {/* Main Content - Preview */}
-        <main className="flex-1 overflow-hidden bg-muted/30">
-          <div className="h-full overflow-auto p-2 md:p-4">
-            <div className="max-w-5xl mx-auto">
-              <ReportPreview settings={settings} />
-            </div>
-          </div>
-        </main>
-      </div>
+          </MotionDiv>
+        </MotionDiv>
+      </main>
 
       <TutorialButton onClick={() => startTutorial(reportSettingsTutorial)} />
     </div>

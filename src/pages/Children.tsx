@@ -22,6 +22,7 @@ import {
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import * as XLSX from 'xlsx';
+import { motion, Variants } from "framer-motion";
 import { useTutorial } from "@/components/tutorial/TutorialProvider";
 import { childrenTutorial } from "@/components/tutorial/tutorials";
 import { TutorialButton } from "@/components/tutorial/TutorialButton";
@@ -78,8 +79,10 @@ const Children = () => {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage] = useState<number>(9);
+  const [totalCount, setTotalCount] = useState<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [trashDialogOpen, setTrashDialogOpen] = useState(false);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [deletedChildren, setDeletedChildren] = useState<DeletedChild[]>([]);
   const [loadingTrash, setLoadingTrash] = useState(false);
   const { startTutorial } = useTutorial();
@@ -127,10 +130,18 @@ const Children = () => {
     }
   }, [user]);
 
-  // Resetear página cuando cambien los filtros
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, gradeFilter, schoolFilter]);
+  }, [debouncedSearchTerm, gradeFilter, schoolFilter]);
 
   const checkAdminRole = async () => {
     if (!user?.id) return;
@@ -170,27 +181,42 @@ const Children = () => {
   };
 
   const fetchChildren = async () => {
+    if (!user) return;
+
+    setLoading(true);
     try {
+      const from = (currentPage - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
+
       let query = supabase
         .from("children")
-        .select("*")
-        .order("name");
+        .select("*", { count: "exact" });
 
-      // Si no es admin, filtrar por sus propios registros
-      if (!isAdmin && user?.id) {
+      // Filtering logic
+      if (!isAdmin) {
         query = query.eq('evaluator_id', user.id);
-      } else if (isAdmin) {
-        // Optimization for admins: if no specific filter, limit results
-        // Use school filter if set
-        if (schoolFilter && schoolFilter !== 'all') {
-          query = query.eq('school', schoolFilter);
-        }
       }
 
-      const { data, error } = await query;
+      if (debouncedSearchTerm) {
+        query = query.ilike('name', `%${debouncedSearchTerm}%`);
+      }
+
+      if (gradeFilter && gradeFilter !== 'all') {
+        query = query.eq('grade', gradeFilter);
+      }
+
+      if (isAdmin && schoolFilter && schoolFilter !== 'all') {
+        query = query.eq('school', schoolFilter);
+      }
+
+      const { data, error, count } = await query
+        .order("name")
+        .range(from, to);
 
       if (error) throw error;
+
       setChildren(data || []);
+      setTotalCount(count || 0);
 
     } catch (error: any) {
       console.error("Error fetching children:", error);
@@ -210,12 +236,12 @@ const Children = () => {
     }
   }, [isAdmin]);
 
-  // Re-fetch when filters change (debounced effect could be better but this works for now)
+  // Main fetch effect
   useEffect(() => {
     if (user) {
       fetchChildren();
     }
-  }, [user, isAdmin, schoolFilter]); // Add schoolFilter dependency
+  }, [user, isAdmin, debouncedSearchTerm, gradeFilter, schoolFilter, currentPage]);
 
   const fetchDeletedChildren = async () => {
     if (!user?.id) return;
@@ -667,12 +693,44 @@ const Children = () => {
     return null;
   }
 
+  // Animation variants
+  const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants: Variants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: { type: "spring", stiffness: 300, damping: 24 }
+    }
+  };
+
+  const MotionDiv = motion.div;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted to-background">
       <header className="border-b bg-card shadow-soft sticky top-0 z-30">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <MotionDiv
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.4 }}
+          className="container mx-auto px-4 py-4 flex items-center justify-between"
+        >
           <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={() => navigate("/dashboard")} className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => navigate("/dashboard")}
+              className="gap-2 bg-white/10 hover:bg-white/20 hover:text-primary transition-all"
+            >
               <ArrowLeft className="h-4 w-4" />
               <span className="hidden sm:inline">Volver</span>
             </Button>
@@ -776,7 +834,7 @@ const Children = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        </div>
+        </MotionDiv>
 
         {/* Global Hidden Inputs/Dialogs that were in header */}
         <input
@@ -868,15 +926,26 @@ const Children = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
+        <MotionDiv
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="mb-8"
+        >
           <h1 className="text-3xl font-bold mb-2">Gestión de Aprendientes</h1>
           <p className="text-muted-foreground">
             Administra los registros de los aprendientes evaluados
           </p>
-        </div>
+        </MotionDiv>
 
         {!loading && children.length > 0 && (
-          <div className="mb-6 space-y-4" data-tutorial="search-filter">
+          <MotionDiv
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="mb-6 space-y-4"
+            data-tutorial="search-filter"
+          >
             <div>
               <Label htmlFor="search" className="mb-2 block">Buscar por nombre</Label>
               <Input
@@ -922,7 +991,7 @@ const Children = () => {
                 </div>
               )}
             </div>
-          </div>
+          </MotionDiv>
         )}
 
         {loading ? (
@@ -932,35 +1001,23 @@ const Children = () => {
         ) : children.length === 0 ? (
           <Card className="p-6">
             <p className="text-center text-muted-foreground">
-              No hay aprendientes registrados. Haga clic en "Agregar Aprendiente" para comenzar.
+              {debouncedSearchTerm || gradeFilter !== "all" || schoolFilter !== "all"
+                ? "No se encontraron aprendientes con los filtros seleccionados."
+                : "No hay aprendientes registrados. Haga clic en \"Agregar Aprendiente\" para comenzar."}
             </p>
           </Card>
-        ) : (() => {
-          // Filtrar children
-          const filteredChildren = children.filter(child => {
-            const matchesSearch = searchTerm === "" ||
-              child.name.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesGrade = gradeFilter === "all" || child.grade === gradeFilter;
-            const matchesSchool = !isAdmin || schoolFilter === "all" || child.school === schoolFilter;
-            return matchesSearch && matchesGrade && matchesSchool;
-          });
-
-          // Calcular paginación
-          const totalPages = Math.ceil(filteredChildren.length / itemsPerPage);
-          const startIndex = (currentPage - 1) * itemsPerPage;
-          const endIndex = startIndex + itemsPerPage;
-          const paginatedChildren = filteredChildren.slice(startIndex, endIndex);
-
-          // Resetear a página 1 si no hay resultados en la página actual
-          if (filteredChildren.length > 0 && paginatedChildren.length === 0 && currentPage > 1) {
-            setCurrentPage(1);
-          }
-
-          return (
-            <>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3" data-tutorial="children-table">
-                {paginatedChildren.map((child) => (
-                  <Card key={child.id}>
+        ) : (
+          <>
+            <MotionDiv
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+              data-tutorial="children-table"
+            >
+              {children.map((child) => (
+                <MotionDiv key={child.id} variants={itemVariants}>
+                  <Card className="h-full">
                     <CardHeader>
                       <CardTitle>{child.name}</CardTitle>
                       <CardDescription>
@@ -1025,11 +1082,16 @@ const Children = () => {
                       </div>
                     </CardContent>
                   </Card>
-                ))}
-              </div>
+                </MotionDiv>
+              ))}
+            </MotionDiv>
 
-              {/* Paginación */}
-              {totalPages > 1 && (
+            {/* Paginación */}
+            {(() => {
+              const totalPages = Math.ceil(totalCount / itemsPerPage);
+              if (totalPages <= 1) return null;
+
+              return (
                 <div className="mt-8 flex justify-center">
                   <Pagination>
                     <PaginationContent>
@@ -1072,10 +1134,10 @@ const Children = () => {
                     </PaginationContent>
                   </Pagination>
                 </div>
-              )}
-            </>
-          );
-        })()}
+              );
+            })()}
+          </>
+        )}
       </main>
 
       {/* Trash Dialog */}

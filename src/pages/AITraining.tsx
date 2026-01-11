@@ -13,11 +13,35 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTutorial } from "@/components/tutorial/TutorialProvider";
 import { aiTrainingTutorial } from "@/components/tutorial/tutorials";
 import { TutorialButton } from "@/components/tutorial/TutorialButton";
+import { motion, Variants } from "framer-motion";
 
 const AITraining = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { startTutorial } = useTutorial();
+
+  // Animation variants
+  const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants: Variants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: { type: "spring", stiffness: 300, damping: 24 }
+    }
+  };
+
+  const MotionDiv = motion.div;
 
   const [isTraining, setIsTraining] = useState(false);
 
@@ -261,381 +285,402 @@ const AITraining = () => {
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-        <div className="container mx-auto p-4 md:p-8 max-w-7xl">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-8">
+      <div className="min-h-screen bg-background">
+        <header className="border-b bg-card sticky top-0 z-30">
+          <MotionDiv
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.4 }}
+            className="container mx-auto px-4 py-4 flex items-center justify-between"
+          >
             <div className="flex items-center gap-4">
               <Button
-                variant="ghost"
+                variant="outline"
                 onClick={() => navigate("/dashboard")}
+                className="bg-white/10 hover:bg-white/20 hover:text-primary transition-all gap-2"
               >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Volver al Panel
+                <ArrowLeft className="h-4 w-4" />
+                <span className="hidden sm:inline">Volver al Panel</span>
               </Button>
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-primary/10">
-                  <Brain className="h-8 w-8 text-primary" />
+                  <Brain className="h-6 w-6 text-primary" />
                 </div>
-                <div>
-                  <h1 className="text-3xl font-bold">Entrenamiento del Modelo</h1>
-                  <p className="text-muted-foreground">
-                    Algoritmo: Random Forest (Greedy) + Red Neuronal
-                  </p>
-                </div>
+                <h1 className="text-2xl font-bold text-foreground">Entrenamiento del Modelo</h1>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <Button onClick={handleDownloadMetrics} variant="outline" data-tutorial="download-metrics-btn">
                 <Download className="h-4 w-4 mr-2" />
-                Descargar Métricas
+                <span className="hidden sm:inline">Descargar Métricas</span>
               </Button>
             </div>
-          </div>
+          </MotionDiv>
+        </header>
 
-          <div className="grid gap-6 md:grid-cols-2">
+        <main className="container mx-auto px-4 py-8 max-w-7xl">
+          <MotionDiv
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid gap-6 md:grid-cols-2"
+          >
+            {/* Context/Description Info */}
+            <MotionDiv variants={itemVariants} className="md:col-span-2 mb-2">
+              <p className="text-muted-foreground">
+                Algoritmo: Random Forest (Greedy) + Red Neuronal
+              </p>
+            </MotionDiv>
             {/* Dataset Configuration */}
-            <Card data-tutorial="dataset-config">
-              <CardHeader>
-                <CardTitle>Configuración del Dataset</CardTitle>
-                <CardDescription>
-                  Configure las muestras para entrenamiento y validación
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="total">Dataset Total</Label>
-                    <Input
-                      id="total"
-                      type="number"
-                      value={totalSamples}
-                      onChange={(e) => setTotalSamples(Number(e.target.value))}
-                      disabled={isTraining}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="training">Entrenamiento</Label>
-                    <Input
-                      id="training"
-                      type="number"
-                      value={trainingSamples}
-                      onChange={(e) => setTrainingSamples(Number(e.target.value))}
-                      disabled={isTraining}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="validation">Validación</Label>
-                    <Input
-                      id="validation"
-                      type="number"
-                      value={validationSamples}
-                      onChange={(e) => setValidationSamples(Number(e.target.value))}
-                      disabled={isTraining}
-                    />
-                  </div>
-                </div>
-
-                <div className="pt-4">
-                  <Button
-                    onClick={handleTrain}
-                    disabled={isTraining}
-                    className="w-full"
-                    data-tutorial="train-btn"
-                  >
-                    <Play className="h-4 w-4 mr-2" />
-                    {isTraining ? "Entrenando..." : "Iniciar Entrenamiento"}
-                  </Button>
-                </div>
-
-                {isTraining && (
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        Progreso: {progress}%
-                      </span>
-                      <span className="text-muted-foreground">
-                        Procesando datos y optimizando parámetros
-                      </span>
+            <MotionDiv variants={itemVariants}>
+              <Card data-tutorial="dataset-config">
+                <CardHeader>
+                  <CardTitle>Configuración del Dataset</CardTitle>
+                  <CardDescription>
+                    Configure las muestras para entrenamiento y validación
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="total">Dataset Total</Label>
+                      <Input
+                        id="total"
+                        type="number"
+                        value={totalSamples}
+                        onChange={(e) => setTotalSamples(Number(e.target.value))}
+                        disabled={isTraining}
+                      />
                     </div>
-                    <Progress value={progress} className="h-2" />
+                    <div className="space-y-2">
+                      <Label htmlFor="training">Entrenamiento</Label>
+                      <Input
+                        id="training"
+                        type="number"
+                        value={trainingSamples}
+                        onChange={(e) => setTrainingSamples(Number(e.target.value))}
+                        disabled={isTraining}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="validation">Validación</Label>
+                      <Input
+                        id="validation"
+                        type="number"
+                        value={validationSamples}
+                        onChange={(e) => setValidationSamples(Number(e.target.value))}
+                        disabled={isTraining}
+                      />
+                    </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
+
+                  <div className="pt-4">
+                    <Button
+                      onClick={handleTrain}
+                      disabled={isTraining}
+                      className="w-full"
+                      data-tutorial="train-btn"
+                    >
+                      <Play className="h-4 w-4 mr-2" />
+                      {isTraining ? "Entrenando..." : "Iniciar Entrenamiento"}
+                    </Button>
+                  </div>
+
+                  {isTraining && (
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          Progreso: {progress}%
+                        </span>
+                        <span className="text-muted-foreground">
+                          Procesando datos y optimizando parámetros
+                        </span>
+                      </div>
+                      <Progress value={progress} className="h-2" />
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </MotionDiv>
 
             {/* Performance Metrics */}
-            <Card data-tutorial="performance-metrics">
-              <CardHeader>
-                <CardTitle>Métricas de Rendimiento</CardTitle>
-                <CardDescription>
-                  Evaluación del modelo Random Forest
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-4 bg-muted/50 rounded-lg">
-                      <div className="text-3xl font-bold text-primary">
-                        {metrics.accuracy.toFixed(2)}%
+            <MotionDiv variants={itemVariants}>
+              <Card data-tutorial="performance-metrics">
+                <CardHeader>
+                  <CardTitle>Métricas de Rendimiento</CardTitle>
+                  <CardDescription>
+                    Evaluación del modelo Random Forest
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center p-4 bg-muted/50 rounded-lg">
+                        <div className="text-3xl font-bold text-primary">
+                          {metrics.accuracy.toFixed(2)}%
+                        </div>
+                        <div className="text-sm text-muted-foreground">Precisión</div>
                       </div>
-                      <div className="text-sm text-muted-foreground">Precisión</div>
-                    </div>
-                    <div className="text-center p-4 bg-muted/50 rounded-lg">
-                      <div className="text-3xl font-bold text-primary">
-                        {metrics.f1High.toFixed(2)}%
+                      <div className="text-center p-4 bg-muted/50 rounded-lg">
+                        <div className="text-3xl font-bold text-primary">
+                          {metrics.f1High.toFixed(2)}%
+                        </div>
+                        <div className="text-sm text-muted-foreground">F1-Score</div>
                       </div>
-                      <div className="text-sm text-muted-foreground">F1-Score</div>
                     </div>
-                  </div>
 
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground">Alto</span>
-                      <span className="font-medium">
-                        {metrics.precisionHigh.toFixed(2)}% / {metrics.f1High.toFixed(2)}%
-                      </span>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">Alto</span>
+                        <span className="font-medium">
+                          {metrics.precisionHigh.toFixed(2)}% / {metrics.f1High.toFixed(2)}%
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">Medio</span>
+                        <span className="font-medium">
+                          {metrics.precisionMedium.toFixed(2)}% / {metrics.f1Medium.toFixed(2)}%
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">Bajo</span>
+                        <span className="font-medium">
+                          {metrics.precisionLow.toFixed(2)}% / {metrics.f1Low.toFixed(2)}%
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground">Medio</span>
-                      <span className="font-medium">
-                        {metrics.precisionMedium.toFixed(2)}% / {metrics.f1Medium.toFixed(2)}%
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground">Bajo</span>
-                      <span className="font-medium">
-                        {metrics.precisionLow.toFixed(2)}% / {metrics.f1Low.toFixed(2)}%
-                      </span>
-                    </div>
-                  </div>
 
-                  <div className="pt-4 border-t">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        Tiempo de entrenamiento:
-                      </span>
-                      <span className="font-medium">{metrics.trainingTime.toFixed(2)}s</span>
-                    </div>
-                    <div className="flex justify-between text-sm mt-1">
-                      <span className="text-muted-foreground">
-                        Último entrenamiento:
-                      </span>
-                      <span className="font-medium">{metrics.lastTrained}</span>
+                    <div className="pt-4 border-t">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          Tiempo de entrenamiento:
+                        </span>
+                        <span className="font-medium">{metrics.trainingTime.toFixed(2)}s</span>
+                      </div>
+                      <div className="flex justify-between text-sm mt-1">
+                        <span className="text-muted-foreground">
+                          Último entrenamiento:
+                        </span>
+                        <span className="font-medium">{metrics.lastTrained}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </MotionDiv>
 
             {/* Training History */}
             {trainingHistory.length > 0 && (
-              <Card className="md:col-span-2" data-tutorial="training-history">
+              <MotionDiv variants={itemVariants} className="md:col-span-2">
+                <Card data-tutorial="training-history">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="flex items-center gap-2">
+                          <History className="h-5 w-5" />
+                          Historial de Entrenamientos
+                        </CardTitle>
+                        <CardDescription>
+                          Compara las métricas de entrenamientos previos
+                        </CardDescription>
+                      </div>
+                      <Select value={selectedComparison || ""} onValueChange={setSelectedComparison}>
+                        <SelectTrigger className="w-[280px]">
+                          <SelectValue placeholder="Seleccionar para comparar" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {trainingHistory.map((training) => (
+                            <SelectItem key={training.id} value={training.id}>
+                              {new Date(training.trained_at).toLocaleString('es-MX', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-5 gap-4 text-sm font-semibold border-b pb-2">
+                        <div>Fecha</div>
+                        <div className="text-center">Precisión</div>
+                        <div className="text-center">F1-Score</div>
+                        <div className="text-center">Muestras</div>
+                        <div className="text-center">Tiempo</div>
+                      </div>
+                      {trainingHistory.map((training, index) => {
+                        const isSelected = training.id === selectedComparison;
+                        const isCurrent = index === 0;
+                        return (
+                          <div
+                            key={training.id}
+                            className={`grid grid-cols-5 gap-4 text-sm p-3 rounded-lg transition-colors ${isSelected ? 'bg-primary/10 border-2 border-primary' :
+                              isCurrent ? 'bg-muted/50' : 'hover:bg-muted/30'
+                              }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              {isCurrent && (
+                                <span className="text-xs font-semibold text-primary">Actual</span>
+                              )}
+                              <span className="text-muted-foreground">
+                                {new Date(training.trained_at).toLocaleString('es-MX', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </span>
+                            </div>
+                            <div className="text-center font-medium">
+                              {training.accuracy?.toFixed(2)}%
+                            </div>
+                            <div className="text-center font-medium">
+                              {training.f1_high?.toFixed(2)}%
+                            </div>
+                            <div className="text-center text-muted-foreground">
+                              {training.training_samples + training.validation_samples + training.test_samples}
+                            </div>
+                            <div className="text-center text-muted-foreground">
+                              {training.training_time_seconds?.toFixed(2)}s
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {selectedComparison && (() => {
+                      const comparedTraining = trainingHistory.find(t => t.id === selectedComparison);
+                      if (!comparedTraining) return null;
+
+                      const currentTraining = trainingHistory[0];
+                      const accuracyDiff = currentTraining.accuracy - comparedTraining.accuracy;
+                      const f1Diff = currentTraining.f1_high - comparedTraining.f1_high;
+
+                      return (
+                        <div className="mt-6 p-4 bg-muted/30 rounded-lg border">
+                          <h4 className="font-semibold mb-3">Comparación con entrenamiento seleccionado</h4>
+                          <div className="grid grid-cols-3 gap-4 text-sm">
+                            <div>
+                              <div className="text-muted-foreground mb-1">Cambio en Precisión</div>
+                              <div className={`text-lg font-bold ${accuracyDiff > 0 ? 'text-green-600 dark:text-green-400' : accuracyDiff < 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
+                                {accuracyDiff > 0 ? '+' : ''}{accuracyDiff.toFixed(2)}%
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-muted-foreground mb-1">Cambio en F1-Score</div>
+                              <div className={`text-lg font-bold ${f1Diff > 0 ? 'text-green-600 dark:text-green-400' : f1Diff < 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
+                                {f1Diff > 0 ? '+' : ''}{f1Diff.toFixed(2)}%
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-muted-foreground mb-1">Mejora General</div>
+                              <div className="text-lg font-bold">
+                                {((accuracyDiff + f1Diff) / 2) > 0 ? '✓ Mejor' : ((accuracyDiff + f1Diff) / 2) < 0 ? '✗ Peor' : '= Igual'}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </CardContent>
+                </Card>
+              </MotionDiv>
+            )}
+
+            {/* Confusion Matrix */}
+            <MotionDiv variants={itemVariants} className="md:col-span-2">
+              <Card data-tutorial="confusion-matrix">
                 <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="flex items-center gap-2">
-                        <History className="h-5 w-5" />
-                        Historial de Entrenamientos
-                      </CardTitle>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <CardTitle>Matriz de Confusión</CardTitle>
                       <CardDescription>
-                        Compara las métricas de entrenamientos previos
+                        Los valores en la diagonal principal (verde) representan
+                        clasificaciones correctas. Los valores fuera de la diagonal
+                        indican errores de clasificación.
                       </CardDescription>
                     </div>
-                    <Select value={selectedComparison || ""} onValueChange={setSelectedComparison}>
-                      <SelectTrigger className="w-[280px]">
-                        <SelectValue placeholder="Seleccionar para comparar" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {trainingHistory.map((training) => (
-                          <SelectItem key={training.id} value={training.id}>
-                            {new Date(training.trained_at).toLocaleString('es-MX', {
-                              day: 'numeric',
-                              month: 'short',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <Info className="h-5 w-5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-sm">
+                        <p className="font-semibold mb-2">¿Cómo leer la matriz?</p>
+                        <p className="text-sm">
+                          Las filas representan las clases reales y las columnas las predicciones del modelo.
+                          Los valores verdes (diagonal) son aciertos. Los valores rojos son errores de clasificación.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="grid grid-cols-5 gap-4 text-sm font-semibold border-b pb-2">
-                      <div>Fecha</div>
-                      <div className="text-center">Precisión</div>
-                      <div className="text-center">F1-Score</div>
-                      <div className="text-center">Muestras</div>
-                      <div className="text-center">Tiempo</div>
-                    </div>
-                    {trainingHistory.map((training, index) => {
-                      const isSelected = training.id === selectedComparison;
-                      const isCurrent = index === 0;
-                      return (
-                        <div
-                          key={training.id}
-                          className={`grid grid-cols-5 gap-4 text-sm p-3 rounded-lg transition-colors ${isSelected ? 'bg-primary/10 border-2 border-primary' :
-                            isCurrent ? 'bg-muted/50' : 'hover:bg-muted/30'
-                            }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            {isCurrent && (
-                              <span className="text-xs font-semibold text-primary">Actual</span>
-                            )}
-                            <span className="text-muted-foreground">
-                              {new Date(training.trained_at).toLocaleString('es-MX', {
-                                day: 'numeric',
-                                month: 'short',
-                                hour: '2-digit',
-                                minute: '2-digit'
+                    <div className="flex justify-center">
+                      <div className="inline-block">
+                        <div className="grid grid-cols-4 gap-2 text-center">
+                          {/* Header */}
+                          <div className="w-24"></div>
+                          <div className="w-24 font-semibold text-sm">Alto</div>
+                          <div className="w-24 font-semibold text-sm">Medio</div>
+                          <div className="w-24 font-semibold text-sm">Bajo</div>
+
+                          {/* Rows */}
+                          {confusionMatrix.map((row, i) => (
+                            <div key={`row-${i}`} className="contents">
+                              <div className="w-24 font-semibold text-sm flex items-center justify-end pr-4">
+                                {i === 0 ? "Alto" : i === 1 ? "Medio" : "Bajo"}
+                              </div>
+                              {row.map((value, j) => {
+                                const explanation = getConfusionMatrixExplanation(i, j, value);
+                                return (
+                                  <Tooltip key={`${i}-${j}`}>
+                                    <TooltipTrigger asChild>
+                                      <div
+                                        className={`w-24 h-24 flex items-center justify-center rounded-lg text-2xl font-bold cursor-help transition-all hover:scale-105 ${i === j
+                                          ? "bg-green-500/20 text-green-700 dark:text-green-400 hover:bg-green-500/30"
+                                          : "bg-red-500/10 text-red-700 dark:text-red-400 hover:bg-red-500/20"
+                                          }`}
+                                      >
+                                        {value}
+                                      </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="max-w-xs">
+                                      <p className="font-semibold mb-1">{explanation.title}</p>
+                                      <p className="text-sm">{explanation.description}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                );
                               })}
-                            </span>
-                          </div>
-                          <div className="text-center font-medium">
-                            {training.accuracy?.toFixed(2)}%
-                          </div>
-                          <div className="text-center font-medium">
-                            {training.f1_high?.toFixed(2)}%
-                          </div>
-                          <div className="text-center text-muted-foreground">
-                            {training.training_samples + training.validation_samples + training.test_samples}
-                          </div>
-                          <div className="text-center text-muted-foreground">
-                            {training.training_time_seconds?.toFixed(2)}s
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {selectedComparison && (() => {
-                    const comparedTraining = trainingHistory.find(t => t.id === selectedComparison);
-                    if (!comparedTraining) return null;
-
-                    const currentTraining = trainingHistory[0];
-                    const accuracyDiff = currentTraining.accuracy - comparedTraining.accuracy;
-                    const f1Diff = currentTraining.f1_high - comparedTraining.f1_high;
-
-                    return (
-                      <div className="mt-6 p-4 bg-muted/30 rounded-lg border">
-                        <h4 className="font-semibold mb-3">Comparación con entrenamiento seleccionado</h4>
-                        <div className="grid grid-cols-3 gap-4 text-sm">
-                          <div>
-                            <div className="text-muted-foreground mb-1">Cambio en Precisión</div>
-                            <div className={`text-lg font-bold ${accuracyDiff > 0 ? 'text-green-600 dark:text-green-400' : accuracyDiff < 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
-                              {accuracyDiff > 0 ? '+' : ''}{accuracyDiff.toFixed(2)}%
                             </div>
-                          </div>
-                          <div>
-                            <div className="text-muted-foreground mb-1">Cambio en F1-Score</div>
-                            <div className={`text-lg font-bold ${f1Diff > 0 ? 'text-green-600 dark:text-green-400' : f1Diff < 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
-                              {f1Diff > 0 ? '+' : ''}{f1Diff.toFixed(2)}%
-                            </div>
-                          </div>
-                          <div>
-                            <div className="text-muted-foreground mb-1">Mejora General</div>
-                            <div className="text-lg font-bold">
-                              {((accuracyDiff + f1Diff) / 2) > 0 ? '✓ Mejor' : ((accuracyDiff + f1Diff) / 2) < 0 ? '✗ Peor' : '= Igual'}
-                            </div>
-                          </div>
+                          ))}
                         </div>
                       </div>
-                    );
-                  })()}
+                    </div>
+
+                    <div className="border-t pt-4 space-y-2 text-sm text-muted-foreground">
+                      <p><strong>Algoritmo utilizado:</strong> Random Forest (Greedy) con capa de Red Neuronal</p>
+                      <p><strong>Características del modelo:</strong></p>
+                      <ul className="list-disc list-inside ml-2 space-y-1">
+                        <li>Random Forest para extracción de patrones y clasificación inicial</li>
+                        <li>Red Neuronal para refinamiento y ajuste de predicciones</li>
+                        <li>Optimización greedy para selección de características más relevantes</li>
+                        <li>Validación cruzada con {validationSamples} muestras</li>
+                      </ul>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            )}
-
-            {/* Confusion Matrix */}
-            <Card className="md:col-span-2" data-tutorial="confusion-matrix">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle>Matriz de Confusión</CardTitle>
-                    <CardDescription>
-                      Los valores en la diagonal principal (verde) representan
-                      clasificaciones correctas. Los valores fuera de la diagonal
-                      indican errores de clasificación.
-                    </CardDescription>
-                  </div>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <Info className="h-5 w-5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-sm">
-                      <p className="font-semibold mb-2">¿Cómo leer la matriz?</p>
-                      <p className="text-sm">
-                        Las filas representan las clases reales y las columnas las predicciones del modelo.
-                        Los valores verdes (diagonal) son aciertos. Los valores rojos son errores de clasificación.
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-center">
-                    <div className="inline-block">
-                      <div className="grid grid-cols-4 gap-2 text-center">
-                        {/* Header */}
-                        <div className="w-24"></div>
-                        <div className="w-24 font-semibold text-sm">Alto</div>
-                        <div className="w-24 font-semibold text-sm">Medio</div>
-                        <div className="w-24 font-semibold text-sm">Bajo</div>
-
-                        {/* Rows */}
-                        {confusionMatrix.map((row, i) => (
-                          <div key={`row-${i}`} className="contents">
-                            <div className="w-24 font-semibold text-sm flex items-center justify-end pr-4">
-                              {i === 0 ? "Alto" : i === 1 ? "Medio" : "Bajo"}
-                            </div>
-                            {row.map((value, j) => {
-                              const explanation = getConfusionMatrixExplanation(i, j, value);
-                              return (
-                                <Tooltip key={`${i}-${j}`}>
-                                  <TooltipTrigger asChild>
-                                    <div
-                                      className={`w-24 h-24 flex items-center justify-center rounded-lg text-2xl font-bold cursor-help transition-all hover:scale-105 ${i === j
-                                        ? "bg-green-500/20 text-green-700 dark:text-green-400 hover:bg-green-500/30"
-                                        : "bg-red-500/10 text-red-700 dark:text-red-400 hover:bg-red-500/20"
-                                        }`}
-                                    >
-                                      {value}
-                                    </div>
-                                  </TooltipTrigger>
-                                  <TooltipContent className="max-w-xs">
-                                    <p className="font-semibold mb-1">{explanation.title}</p>
-                                    <p className="text-sm">{explanation.description}</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              );
-                            })}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="border-t pt-4 space-y-2 text-sm text-muted-foreground">
-                    <p><strong>Algoritmo utilizado:</strong> Random Forest (Greedy) con capa de Red Neuronal</p>
-                    <p><strong>Características del modelo:</strong></p>
-                    <ul className="list-disc list-inside ml-2 space-y-1">
-                      <li>Random Forest para extracción de patrones y clasificación inicial</li>
-                      <li>Red Neuronal para refinamiento y ajuste de predicciones</li>
-                      <li>Optimización greedy para selección de características más relevantes</li>
-                      <li>Validación cruzada con {validationSamples} muestras</li>
-                    </ul>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+            </MotionDiv>
+          </MotionDiv>
+        </main>
       </div>
 
       <TutorialButton onClick={() => startTutorial(aiTrainingTutorial)} />
