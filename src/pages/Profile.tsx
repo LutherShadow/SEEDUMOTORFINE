@@ -13,6 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ResetTourButton } from "@/components/tutorial/ResetTourButton";
 import { useTheme } from "@/components/ThemeProvider";
+import { Header } from "@/components/Layout/Header";
 import { motion, Variants } from "framer-motion";
 
 interface Profile {
@@ -168,17 +169,19 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-muted/30">
-      {/* Premium Header with Gradient */}
-      <div className="bg-gradient-to-r from-primary/90 to-primary text-primary-foreground pb-12 pt-8 px-6 shadow-lg">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+      <Header />
+
+      {/* Title Section */}
+      <div className="bg-background border-b mb-8">
+        <div className="max-w-6xl mx-auto py-8 px-6 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-4">
             <MotionDiv
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.2 }}
-              className="p-4 bg-white/20 backdrop-blur-md rounded-2xl shadow-inner border border-white/10"
+              className="p-3 bg-primary/10 rounded-2xl border border-primary/20"
             >
-              <UserIcon className="h-10 w-10 text-white" />
+              <UserIcon className="h-8 w-8 text-primary" />
             </MotionDiv>
             <div>
               <motion.h1
@@ -193,7 +196,7 @@ const Profile = () => {
                 initial={{ x: -20, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.4 }}
-                className="text-primary-foreground/80 mt-1"
+                className="text-muted-foreground mt-1"
               >
                 Gestiona tu información personal y preferencias
               </motion.p>
@@ -207,7 +210,7 @@ const Profile = () => {
             <Button
               variant="outline"
               onClick={() => navigate("/dashboard")}
-              className="bg-white/10 hover:bg-white/20 text-white border-white/20 shadow-sm backdrop-blur-sm transition-all hover:text-white"
+              className="shadow-sm transition-all"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Volver al Panel
@@ -216,7 +219,7 @@ const Profile = () => {
         </div>
       </div>
 
-      <main className="max-w-6xl mx-auto px-6 -mt-8 pb-12">
+      <main className="max-w-6xl mx-auto px-6 pb-12">
         <MotionDiv
           variants={containerVariants}
           initial="hidden"
