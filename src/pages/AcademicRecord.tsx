@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Calendar, TrendingUp, Award, FileText, Target, Brain } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -74,7 +73,7 @@ const AcademicRecord = () => {
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const childId = searchParams.get("childId");
-  
+
   const [child, setChild] = useState<Child | null>(null);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [competencyIndices, setCompetencyIndices] = useState<CompetencyIndex[]>([]);
@@ -243,7 +242,6 @@ const AcademicRecord = () => {
                 <p className="text-muted-foreground">{child.name}</p>
               </div>
             </div>
-            <ThemeToggle />
           </div>
         </div>
       </div>
@@ -321,14 +319,14 @@ const AcademicRecord = () => {
                 {latestCompetency ? (
                   <>
                     <p className="text-2xl font-bold">{latestCompetency.overall_index.toFixed(1)}%</p>
-                    <Progress 
-                      value={latestCompetency.overall_index} 
+                    <Progress
+                      value={latestCompetency.overall_index}
                       className="h-2"
                     />
                     {latestCompetency.trend && (
                       <Badge variant={latestCompetency.trend === 'upward' ? 'default' : 'secondary'}>
-                        {latestCompetency.trend === 'upward' ? 'Mejorando' : 
-                         latestCompetency.trend === 'stable' ? 'Estable' : 'En desarrollo'}
+                        {latestCompetency.trend === 'upward' ? 'Mejorando' :
+                          latestCompetency.trend === 'stable' ? 'Estable' : 'En desarrollo'}
                       </Badge>
                     )}
                   </>
@@ -383,7 +381,7 @@ const AcademicRecord = () => {
                               Promedio: {avgScore.toFixed(1)}
                             </Badge>
                           </div>
-                          
+
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                             {ACTIVITIES.map((activity, idx) => {
                               const scoreKey = `test_${idx + 1}_score` as keyof Evaluation;
@@ -557,7 +555,7 @@ const AcademicRecord = () => {
                             <div className="space-y-2">
                               <p className="font-medium">{content.activityName || 'Actividad personalizada'}</p>
                               <p className="text-sm text-muted-foreground">{content.description}</p>
-                              
+
                               {content.targetSkills && (
                                 <div className="flex flex-wrap gap-1">
                                   {content.targetSkills.map((skill: string, idx: number) => (
@@ -576,8 +574,8 @@ const AcademicRecord = () => {
                                 <span className="text-muted-foreground">Efectividad:</span>{' '}
                                 <span className="font-medium">{activity.effectiveness_rating}/5</span>
                               </p>
-                              <Progress 
-                                value={(activity.effectiveness_rating / 5) * 100} 
+                              <Progress
+                                value={(activity.effectiveness_rating / 5) * 100}
                                 className="h-2 mt-1"
                               />
                             </div>
@@ -669,12 +667,12 @@ const AcademicRecord = () => {
                   )}
 
                   {evaluations.filter(evaluation => evaluation.observations).length === 0 &&
-                   competencyIndices.filter(compIndex => compIndex.notes).length === 0 &&
-                   appliedActivities.filter(activity => activity.notes).length === 0 && (
-                    <p className="text-center text-muted-foreground py-8">
-                      No hay notas del docente registradas
-                    </p>
-                  )}
+                    competencyIndices.filter(compIndex => compIndex.notes).length === 0 &&
+                    appliedActivities.filter(activity => activity.notes).length === 0 && (
+                      <p className="text-center text-muted-foreground py-8">
+                        No hay notas del docente registradas
+                      </p>
+                    )}
                 </div>
               </CardContent>
             </Card>

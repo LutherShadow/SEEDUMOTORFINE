@@ -11,7 +11,6 @@ import { Plus, Trash2, Edit, Save, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function QuestionnaireManage() {
@@ -109,7 +108,7 @@ export default function QuestionnaireManage() {
   const initializeQuestionnaires = useMutation({
     mutationFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       const response = await fetch(
         `https://tctypxdamgmqrlswmxqg.supabase.co/functions/v1/initialize-questionnaires`,
         {
@@ -155,7 +154,6 @@ export default function QuestionnaireManage() {
             </Button>
             <h1 className="text-2xl font-bold text-foreground">Administrar Cuestionarios</h1>
           </div>
-          <ThemeToggle />
         </div>
       </header>
 
@@ -166,11 +164,11 @@ export default function QuestionnaireManage() {
               <div>
                 <p className="font-medium mb-1">Cuestionarios Pre-configurados</p>
                 <p className="text-sm text-muted-foreground">
-                  Inicializa los cuestionarios oficiales: Cornell (44 preguntas), CHAEA (80 preguntas) y TAM (84 preguntas). 
+                  Inicializa los cuestionarios oficiales: Cornell (44 preguntas), CHAEA (80 preguntas) y TAM (84 preguntas).
                   Una vez creados, puedes personalizarlos y adaptarlos según tus necesidades.
                 </p>
               </div>
-              <Button 
+              <Button
                 onClick={() => initializeQuestionnaires.mutate()}
                 disabled={initializeQuestionnaires.isPending}
                 variant="outline"

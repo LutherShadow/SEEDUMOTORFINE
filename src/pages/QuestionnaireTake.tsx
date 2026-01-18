@@ -9,7 +9,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function QuestionnaireTake() {
   const { id } = useParams();
@@ -91,7 +90,7 @@ export default function QuestionnaireTake() {
       // Calculate dimension scores
       const dimensionScores: Record<string, number> = {};
       const dimensionIdToName = new Map<string, string>();
-      
+
       if (dimensions) {
         dimensions.forEach((dim) => {
           dimensionIdToName.set(dim.id, dim.name);
@@ -168,7 +167,6 @@ export default function QuestionnaireTake() {
               {questionnaire?.name}
             </h1>
           </div>
-          <ThemeToggle />
         </div>
       </header>
 

@@ -130,7 +130,6 @@ export default function ParentLinks() {
             </Button>
             <h1 className="text-2xl font-bold text-foreground">Códigos de Verificación para Padres</h1>
           </div>
-          <ThemeToggle />
         </div>
       </header>
 

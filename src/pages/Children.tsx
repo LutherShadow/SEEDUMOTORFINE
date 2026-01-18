@@ -19,7 +19,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import * as XLSX from 'xlsx';
 import { motion, Variants } from "framer-motion";
@@ -734,7 +733,6 @@ const Children = () => {
               <ArrowLeft className="h-4 w-4" />
               <span className="hidden sm:inline">Volver</span>
             </Button>
-            <ThemeToggle />
           </div>
 
           {/* Desktop Toolbar */}

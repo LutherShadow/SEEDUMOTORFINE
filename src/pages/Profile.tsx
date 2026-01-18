@@ -13,7 +13,6 @@ import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ResetTourButton } from "@/components/tutorial/ResetTourButton";
 import { useTheme } from "@/components/ThemeProvider";
-import { Header } from "@/components/Layout/Header";
 import { motion, Variants } from "framer-motion";
 
 interface Profile {
@@ -169,8 +168,6 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-muted/30">
-      <Header />
-
       {/* Title Section */}
       <div className="bg-background border-b mb-8">
         <div className="max-w-6xl mx-auto py-8 px-6 flex flex-col md:flex-row items-center justify-between gap-6">

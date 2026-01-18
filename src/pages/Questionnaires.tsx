@@ -6,7 +6,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, ClipboardList, Settings, Link2, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { GenerateParentLinkDialog } from "@/components/GenerateParentLinkDialog";
 import { FixDimensionNames } from "@/components/FixDimensionNames";
 import { useTutorial } from "@/components/tutorial/TutorialProvider";

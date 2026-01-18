@@ -8,7 +8,6 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, Save } from "lucide-react";
-import { ThemeToggle } from "@/components/ThemeToggle";
 
 // TAM Questions based on 8 fine motor activities and learning styles
 const QUESTIONS = [
@@ -154,7 +153,7 @@ const LearningStyleAssessment = () => {
         .select("name")
         .eq("id", childId)
         .single();
-      
+
       if (error) {
         toast.error("Error al cargar información del aprendiente");
         return;
@@ -205,7 +204,7 @@ const LearningStyleAssessment = () => {
 
     // Find dominant styles
     const sortedStyles = Object.entries(avgScores).sort((a, b) => b[1] - a[1]);
-    
+
     return {
       scores: avgScores,
       dominant_style: sortedStyles[0][0],
@@ -271,7 +270,6 @@ const LearningStyleAssessment = () => {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Volver
             </Button>
-            <ThemeToggle />
           </div>
           <CardTitle className="text-2xl">Test de Análisis de Modalidades (TAM)</CardTitle>
           <CardDescription>

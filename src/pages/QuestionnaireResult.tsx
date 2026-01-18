@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { Download } from "lucide-react";
 import type { ReportType } from "@/lib/reportTypeTemplates";
 
@@ -26,30 +25,30 @@ export default function QuestionnaireResult() {
         .single();
 
       if (error) throw error;
-      
+
       // Fetch dimensions for this questionnaire
       if (data && data.questionnaire_id) {
         const { data: dimensions } = await supabase
           .from("questionnaire_dimensions")
           .select("id, name, code")
           .eq("questionnaire_id", data.questionnaire_id);
-        
+
         if (dimensions && data.dimension_scores) {
           const dimensionMap = new Map(
             dimensions.map((d) => [d.id, d.name])
           );
-          
+
           // Convert dimension_scores from {uuid: score} to {name: score}
           const scores = data.dimension_scores as Record<string, number>;
           const namedScores: Record<string, number> = {};
-          
+
           Object.entries(scores).forEach(([dimensionId, score]) => {
             const dimensionName = dimensionMap.get(dimensionId) || dimensionId;
             namedScores[dimensionName] = score;
           });
-          
+
           data.dimension_scores = namedScores;
-          
+
           // Map dominant and secondary dimensions
           if (data.dominant_dimension && dimensionMap.has(data.dominant_dimension)) {
             data.dominant_dimension = dimensionMap.get(data.dominant_dimension) || data.dominant_dimension;
@@ -59,7 +58,7 @@ export default function QuestionnaireResult() {
           }
         }
       }
-      
+
       return data;
     },
   });
@@ -109,7 +108,6 @@ export default function QuestionnaireResult() {
             </Button>
             <h1 className="text-2xl font-bold text-foreground">Resultado del Cuestionario</h1>
           </div>
-          <ThemeToggle />
         </div>
       </header>
 
@@ -150,7 +148,7 @@ export default function QuestionnaireResult() {
                 // Determine if this is a high-range questionnaire (like TAM with scores > 10)
                 const isHighRange = maxScore > 10;
                 const normalizer = isHighRange ? maxScore : 5;
-                
+
                 return Object.entries(scores).map(([dimension, score]) => (
                   <div key={dimension}>
                     <div className="flex justify-between items-center mb-2">

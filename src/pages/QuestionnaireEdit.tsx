@@ -9,7 +9,6 @@ import { Plus, Trash2, Save, ArrowUp, ArrowDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type Dimension = {
@@ -227,7 +226,6 @@ export default function QuestionnaireEdit() {
               Editar: {questionnaire?.name}
             </h1>
           </div>
-          <ThemeToggle />
         </div>
       </header>
 

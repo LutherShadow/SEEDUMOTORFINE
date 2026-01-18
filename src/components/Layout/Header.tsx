@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -22,8 +22,11 @@ interface HeaderProps {
 
 export const Header = ({ title = "Sistema de Evaluación Motriz", showTitle = true }: HeaderProps) => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { toast } = useToast();
     const [userEmail, setUserEmail] = useState<string | null>(null);
+
+    const isDashboard = location.pathname === "/dashboard";
 
     useEffect(() => {
         supabase.auth.getUser().then(({ data: { user } }) => {
@@ -66,10 +69,12 @@ export const Header = ({ title = "Sistema de Evaluación Motriz", showTitle = tr
               Let's use a wrapper with text for 'Tema'.
            */}
 
-                    <div className="flex items-center gap-2 border rounded-md px-3 py-1 bg-background/50 hover:bg-accent/10 transition-colors">
-                        <span className="text-sm font-medium mr-1">Tema</span>
-                        <ThemeToggle />
-                    </div>
+                    {isDashboard && (
+                        <div className="flex items-center gap-2 border rounded-md px-3 py-1 bg-background/50 hover:bg-accent/10 transition-colors">
+                            <span className="text-sm font-medium mr-1">Tema</span>
+                            <ThemeToggle />
+                        </div>
+                    )}
 
                     <Button
                         variant="ghost"
@@ -125,13 +130,15 @@ export const Header = ({ title = "Sistema de Evaluación Motriz", showTitle = tr
                                         Mi Perfil
                                     </Button>
 
-                                    <div className="flex items-center justify-between px-4 py-2 rounded-md hover:bg-accent cursor-pointer group">
-                                        <div className="flex items-center gap-3">
-                                            <Settings className="h-5 w-5 text-primary" />
-                                            <span className="text-base font-normal">Tema</span>
+                                    {isDashboard && (
+                                        <div className="flex items-center justify-between px-4 py-2 rounded-md hover:bg-accent cursor-pointer group">
+                                            <div className="flex items-center gap-3">
+                                                <Settings className="h-5 w-5 text-primary" />
+                                                <span className="text-base font-normal">Tema</span>
+                                            </div>
+                                            <ThemeToggle />
                                         </div>
-                                        <ThemeToggle />
-                                    </div>
+                                    )}
                                 </div>
 
                                 <div className="h-px bg-border my-2" />

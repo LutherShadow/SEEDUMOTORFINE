@@ -10,7 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { ProgressTracker } from "@/components/reports/ProgressTracker";
 import { IntervalComparison } from "@/components/reports/IntervalComparison";
 import { ProgressPrediction } from "@/components/reports/ProgressPrediction";
@@ -770,9 +769,6 @@ const Reports = () => {
             <ArrowLeft className="h-4 w-4" />
             <span className="hidden sm:inline">Volver al Panel</span>
           </Button>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-          </div>
         </MotionDiv>
       </header>
 
