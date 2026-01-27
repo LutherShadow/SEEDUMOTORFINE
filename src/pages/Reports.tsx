@@ -95,6 +95,9 @@ const Reports = () => {
   const [personalizedActivities, setPersonalizedActivities] = useState<any[]>([]);
   const [competencyIndex, setCompetencyIndex] = useState<any>(null);
   const [missingQuestionnaires, setMissingQuestionnaires] = useState<string[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [schools, setSchools] = useState<string[]>([]);
+  const [schoolFilter, setSchoolFilter] = useState<string>("all");
 
   useEffect(() => {
     const completedTutorials = JSON.parse(localStorage.getItem('completedTutorials') || '[]');
@@ -127,9 +130,17 @@ const Reports = () => {
 
   useEffect(() => {
     if (user) {
+      checkAdminRole();
+      fetchSchools();
       fetchChildren();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (user && isAdmin) {
+      fetchChildren();
+    }
+  }, [schoolFilter]);
 
   useEffect(() => {
     if (selectedChild) {
@@ -139,12 +150,51 @@ const Reports = () => {
     }
   }, [selectedChild]);
 
-  const fetchChildren = async () => {
+  const checkAdminRole = async () => {
+    if (!user?.id) return;
+
+    try {
+      const { data, error } = await supabase.rpc('has_role', {
+        _user_id: user.id,
+        _role: 'admin'
+      });
+
+      if (error) throw error;
+      setIsAdmin(data || false);
+    } catch (error) {
+      console.error("Error checking admin role:", error);
+      setIsAdmin(false);
+    }
+  };
+
+  const fetchSchools = async () => {
     try {
       const { data, error } = await supabase
         .from("children")
-        .select("id, name")
-        .order("name");
+        .select("school")
+        .not("school", "is", null);
+
+      if (error) throw error;
+
+      const uniqueSchools = Array.from(new Set(data?.map(item => item.school).filter(Boolean))) as string[];
+      setSchools(uniqueSchools.sort());
+    } catch (error) {
+      console.error("Error fetching schools:", error);
+    }
+  };
+
+  const fetchChildren = async () => {
+    try {
+      let query = supabase
+        .from("children")
+        .select("id, name");
+
+      // Filter by school if admin has selected a specific school
+      if (isAdmin && schoolFilter && schoolFilter !== 'all') {
+        query = query.eq('school', schoolFilter);
+      }
+
+      const { data, error } = await query.order("name");
 
       if (error) throw error;
       setChildren(data || []);
@@ -792,13 +842,31 @@ const Reports = () => {
           </CardHeader>
           <CardContent>
             <div className="flex gap-4 items-end">
+              {isAdmin && schools.length > 0 && (
+                <div className="flex-1">
+                  <Label>Escuela</Label>
+                  <Select value={schoolFilter} onValueChange={setSchoolFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todas las escuelas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas las escuelas</SelectItem>
+                      {schools.map((school) => (
+                        <SelectItem key={school} value={school}>
+                          {school}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="flex-1">
                 <Label>Aprendiente</Label>
                 <Select value={selectedChild} onValueChange={setSelectedChild}>
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar aprendiente" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" className="max-h-[300px] overflow-y-auto">
                     {children.map((child) => (
                       <SelectItem key={child.id} value={child.id}>
                         {child.name}

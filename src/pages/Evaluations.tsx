@@ -98,6 +98,9 @@ const Evaluations = () => {
   const [childFilter, setChildFilter] = useState<string>("all");
   const [displayLimit, setDisplayLimit] = useState(50);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [schools, setSchools] = useState<string[]>([]);
+  const [schoolFilter, setSchoolFilter] = useState<string>("all");
 
   useEffect(() => {
     const completedTutorials = JSON.parse(localStorage.getItem('completedTutorials') || '[]');
@@ -130,14 +133,49 @@ const Evaluations = () => {
 
   useEffect(() => {
     if (user) {
+      checkAdminRole();
+      fetchSchools();
       fetchData();
     }
   }, [user]);
 
+  const checkAdminRole = async () => {
+    if (!user?.id) return;
+
+    try {
+      const { data, error } = await supabase.rpc('has_role', {
+        _user_id: user.id,
+        _role: 'admin'
+      });
+
+      if (error) throw error;
+      setIsAdmin(data || false);
+    } catch (error) {
+      console.error("Error checking admin role:", error);
+      setIsAdmin(false);
+    }
+  };
+
+  const fetchSchools = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("children")
+        .select("school")
+        .not("school", "is", null);
+
+      if (error) throw error;
+
+      const uniqueSchools = Array.from(new Set(data?.map(item => item.school).filter(Boolean))) as string[];
+      setSchools(uniqueSchools.sort());
+    } catch (error) {
+      console.error("Error fetching schools:", error);
+    }
+  };
+
   const fetchData = async () => {
     try {
       const [childrenRes, evaluationsRes] = await Promise.all([
-        supabase.from("children").select("id, name").order("name"),
+        supabase.from("children").select("id, name, school").order("name"),
         supabase.from("evaluations").select("*, children(name, grade)").order("evaluation_date", { ascending: false })
       ]);
 
@@ -469,9 +507,17 @@ const Evaluations = () => {
       const matchGrade = gradeFilter === "all" || evaluation.children.grade === gradeFilter;
       const evalChild = children.find(c => c.name === evaluation.children.name);
       const matchChild = childFilter === "all" || evalChild?.id === childFilter;
-      return matchMonth && matchGrade && matchChild;
+
+      // Add school filter for admins
+      let matchSchool = true;
+      if (isAdmin && schoolFilter && schoolFilter !== 'all') {
+        const childData = children.find(c => c.name === evaluation.children.name);
+        matchSchool = childData && (childData as any).school === schoolFilter;
+      }
+
+      return matchMonth && matchGrade && matchChild && matchSchool;
     });
-  }, [evaluations, monthFilter, gradeFilter, childFilter, children]);
+  }, [evaluations, monthFilter, gradeFilter, childFilter, schoolFilter, children, isAdmin]);
 
   const displayedEvaluations = useMemo(() => {
     return filteredEvaluations.slice(0, displayLimit);
@@ -660,9 +706,27 @@ const Evaluations = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
-              className="mb-6 grid gap-4 md:grid-cols-3"
+              className={`mb-6 grid gap-4 ${isAdmin && schools.length > 0 ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}
               data-tutorial="evaluation-filters"
             >
+              {isAdmin && schools.length > 0 && (
+                <div>
+                  <Label htmlFor="school-filter" className="mb-2 block">Filtrar por escuela</Label>
+                  <Select value={schoolFilter} onValueChange={setSchoolFilter}>
+                    <SelectTrigger id="school-filter" className="bg-card">
+                      <SelectValue placeholder="Todas las escuelas" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-card">
+                      <SelectItem value="all">Todas las escuelas</SelectItem>
+                      {schools.map((school) => (
+                        <SelectItem key={school} value={school}>
+                          {school}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div>
                 <Label htmlFor="month-filter" className="mb-2 block">Filtrar por mes</Label>
                 <Select value={monthFilter} onValueChange={setMonthFilter}>

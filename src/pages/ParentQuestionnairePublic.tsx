@@ -22,7 +22,7 @@ export default function ParentQuestionnairePublic() {
 
   const validateCode = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!code.trim()) {
       toast.error("Por favor ingrese el código de verificación");
       return;
@@ -65,7 +65,7 @@ export default function ParentQuestionnairePublic() {
     // Build dimension map
     const dimensions = validationData?.dimensions || [];
     const dimensionMap = new Map<string, { name: string; sum: number; count: number }>();
-    
+
     dimensions.forEach((dim: any) => {
       dimensionMap.set(dim.id, { name: dim.name, sum: 0, count: 0 });
     });
@@ -75,7 +75,7 @@ export default function ParentQuestionnairePublic() {
       if (response !== undefined && question.dimension_id) {
         const score = question.is_reverse_scored ? (6 - response) : response;
         const weight = question.score_weight || 1;
-        
+
         const dimData = dimensionMap.get(question.dimension_id);
         if (dimData) {
           dimData.sum += score * weight;
@@ -87,7 +87,7 @@ export default function ParentQuestionnairePublic() {
     // Convert to named dimension scores
     const dimensionScores: Record<string, number> = {};
     const dimensionAverages: Array<[string, number]> = [];
-    
+
     dimensionMap.forEach((data) => {
       if (data.count > 0) {
         const avgScore = data.sum / data.count;
@@ -229,7 +229,7 @@ export default function ParentQuestionnairePublic() {
                   </CardHeader>
                   <CardContent>
                     <RadioGroup
-                      value={responses[question.id]?.toString()}
+                      value={responses[question.id]?.toString() ?? ""}
                       onValueChange={(value) =>
                         setResponses({ ...responses, [question.id]: parseInt(value) })
                       }

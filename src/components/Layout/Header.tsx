@@ -70,7 +70,10 @@ export const Header = ({ title = "Sistema de Evaluación Motriz", showTitle = tr
            */}
 
                     {isDashboard && (
-                        <div className="flex items-center gap-2 border rounded-md px-3 py-1 bg-background/50 hover:bg-accent/10 transition-colors">
+                        <div
+                            className="flex items-center gap-2 border rounded-md px-3 py-1 bg-background/50 hover:bg-accent/10 transition-colors"
+                            data-tutorial="theme-toggle"
+                        >
                             <span className="text-sm font-medium mr-1">Tema</span>
                             <ThemeToggle />
                         </div>
@@ -80,6 +83,7 @@ export const Header = ({ title = "Sistema de Evaluación Motriz", showTitle = tr
                         variant="ghost"
                         className="flex items-center gap-2 hover:bg-primary/10 hover:text-primary transition-colors"
                         onClick={() => navigate("/profile")}
+                        data-tutorial="profile-btn"
                     >
                         <UserCircle className="h-5 w-5" />
                         <span>Mi Perfil</span>
@@ -89,6 +93,7 @@ export const Header = ({ title = "Sistema de Evaluación Motriz", showTitle = tr
                         variant="ghost"
                         className="flex items-center gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive transition-colors"
                         onClick={handleLogout}
+                        data-tutorial="logout-btn"
                     >
                         <LogOut className="h-5 w-5" />
                         <span>Cerrar Sesión</span>
@@ -125,13 +130,17 @@ export const Header = ({ title = "Sistema de Evaluación Motriz", showTitle = tr
                                             // For fully correct "close on click", we need a controlled Sheet. 
                                             // For now accepting that user manually closes or navigates away.
                                         }}
+                                        data-tutorial="profile-btn"
                                     >
                                         <UserCircle className="h-5 w-5 text-primary" />
                                         Mi Perfil
                                     </Button>
 
                                     {isDashboard && (
-                                        <div className="flex items-center justify-between px-4 py-2 rounded-md hover:bg-accent cursor-pointer group">
+                                        <div
+                                            className="flex items-center justify-between px-4 py-2 rounded-md hover:bg-accent cursor-pointer group"
+                                            data-tutorial="theme-toggle"
+                                        >
                                             <div className="flex items-center gap-3">
                                                 <Settings className="h-5 w-5 text-primary" />
                                                 <span className="text-base font-normal">Tema</span>
@@ -147,6 +156,7 @@ export const Header = ({ title = "Sistema de Evaluación Motriz", showTitle = tr
                                     variant="ghost"
                                     className="justify-start gap-3 h-12 text-base font-normal w-full text-destructive hover:text-destructive hover:bg-destructive/10"
                                     onClick={handleLogout}
+                                    data-tutorial="logout-btn"
                                 >
                                     <LogOut className="h-5 w-5" />
                                     Cerrar Sesión

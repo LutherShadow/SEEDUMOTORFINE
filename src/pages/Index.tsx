@@ -41,11 +41,11 @@ const Index = () => {
             Plataforma integral para evaluar el desarrollo motor fino, estilos de aprendizaje
             y habilidades de estudio en aprendientes con herramientas especializadas
           </p>
-          <div className="flex gap-4 justify-center" data-tour="login-button">
+          <div className="flex gap-4 justify-center" data-tutorial="login-button">
             <Button size="lg" onClick={() => navigate("/auth")}>
               Iniciar Sesión
             </Button>
-            <Button size="lg" variant="outline" onClick={() => navigate("/auth")}>
+            <Button size="lg" variant="outline" onClick={() => navigate("/auth?tab=signup")}>
               Registrarse
             </Button>
           </div>

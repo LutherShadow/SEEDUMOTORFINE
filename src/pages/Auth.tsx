@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,15 +13,27 @@ import { ArrowLeft } from "lucide-react";
 const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("signin");
+
+  // Set initial tab based on URL parameter
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam === "signup") {
+      setActiveTab("signup");
+    } else {
+      setActiveTab("signin");
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (session?.user) {
         navigate("/dashboard");
       }
@@ -30,7 +42,7 @@ const Auth = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (session?.user) {
         navigate("/dashboard");
       }
@@ -50,9 +62,18 @@ const Auth = () => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
+      let errorMessage = error.message;
+
+      // Provide more helpful error messages
+      if (error.message.includes("Invalid login credentials")) {
+        errorMessage = "Correo electrónico o contraseña incorrectos. Por favor, verifica tus credenciales e intenta nuevamente.";
+      } else if (error.message.includes("Email not confirmed")) {
+        errorMessage = "Por favor, confirma tu correo electrónico antes de iniciar sesión.";
+      }
+
       toast({
         title: "Error al iniciar sesión",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     } else {
@@ -119,7 +140,7 @@ const Auth = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="signin" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Iniciar Sesión</TabsTrigger>
               <TabsTrigger value="signup">Registrarse</TabsTrigger>

@@ -10,7 +10,6 @@ import { helpContent } from "@/lib/helpContent";
 import { useTutorial } from "@/components/tutorial/TutorialProvider";
 import { dashboardTutorial } from "@/components/tutorial/tutorials";
 import { TutorialButton } from "@/components/tutorial/TutorialButton";
-import { PostLoginTour } from "@/components/tutorial/PostLoginTour";
 import { Header } from "@/components/Layout/Header";
 import { motion, Variants } from "framer-motion";
 
@@ -137,7 +136,7 @@ const Dashboard = () => {
                   <Card
                     className="cursor-pointer transition-all hover:shadow-medium hover:-translate-y-1 h-full"
                     onClick={() => navigate("/children")}
-                    data-tour="children-card"
+                    data-tutorial="children-card"
                   >
                     <CardHeader>
                       <div className="flex items-center gap-2">
@@ -168,7 +167,7 @@ const Dashboard = () => {
                   <Card
                     className="cursor-pointer transition-all hover:shadow-medium hover:-translate-y-1 h-full"
                     onClick={() => navigate("/evaluations")}
-                    data-tour="evaluations-card"
+                    data-tutorial="evaluations-card"
                   >
                     <CardHeader>
                       <div className="flex items-center gap-2">
@@ -199,7 +198,7 @@ const Dashboard = () => {
                   <Card
                     className="cursor-pointer transition-all hover:shadow-medium hover:-translate-y-1 h-full"
                     onClick={() => navigate("/reports")}
-                    data-tour="reports-card"
+                    data-tutorial="reports-card"
                   >
                     <CardHeader>
                       <div className="flex items-center gap-2">
@@ -230,7 +229,7 @@ const Dashboard = () => {
                   <Card
                     className="cursor-pointer transition-all hover:shadow-medium hover:-translate-y-1 h-full"
                     onClick={() => navigate("/questionnaires")}
-                    data-tour="questionnaires-card"
+                    data-tutorial="questionnaires-card"
                   >
                     <CardHeader>
                       <div className="flex items-center gap-2">
@@ -319,7 +318,6 @@ const Dashboard = () => {
           )}
         </MotionDiv>
       </main>
-      <PostLoginTour />
       <TutorialButton onClick={() => startTutorial(dashboardTutorial)} />
     </div>
   );

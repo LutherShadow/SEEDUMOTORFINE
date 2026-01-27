@@ -124,7 +124,6 @@ const Children = () => {
 
   useEffect(() => {
     if (user) {
-      fetchChildren();
       checkAdminRole();
     }
   }, [user]);
@@ -240,7 +239,7 @@ const Children = () => {
     if (user) {
       fetchChildren();
     }
-  }, [user, isAdmin, debouncedSearchTerm, gradeFilter, schoolFilter, currentPage]);
+  }, [user, isAdmin, debouncedSearchTerm, gradeFilter, schoolFilter, currentPage, itemsPerPage]);
 
   const fetchDeletedChildren = async () => {
     if (!user?.id) return;
@@ -936,7 +935,7 @@ const Children = () => {
           </p>
         </MotionDiv>
 
-        {!loading && children.length > 0 && (
+        {!loading && (isAdmin || children.length > 0) && (
           <MotionDiv
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

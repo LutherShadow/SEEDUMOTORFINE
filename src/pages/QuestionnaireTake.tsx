@@ -204,7 +204,7 @@ export default function QuestionnaireTake() {
                 </Label>
                 <RadioGroup
                   className="mt-3"
-                  value={responses[question.id!]?.toString()}
+                  value={responses[question.id!]?.toString() ?? ""}
                   onValueChange={(value) =>
                     setResponses({ ...responses, [question.id!]: parseInt(value) })
                   }

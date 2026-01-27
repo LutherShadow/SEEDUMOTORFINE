@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { Plus, ClipboardList, Settings, Link2, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -20,6 +22,8 @@ export default function Questionnaires() {
   const [activeTab, setActiveTab] = useState("available");
   const [showParentLinkDialog, setShowParentLinkDialog] = useState(false);
   const { startTutorial } = useTutorial();
+  const [schools, setSchools] = useState<string[]>([]);
+  const [schoolFilter, setSchoolFilter] = useState<string>("all");
 
   // Tutorial effect
   useEffect(() => {
@@ -28,6 +32,11 @@ export default function Questionnaires() {
       startTutorial(questionnairesTutorial);
     }
   }, [startTutorial]);
+
+  // Fetch schools for admin filter
+  useEffect(() => {
+    fetchSchools();
+  }, []);
 
   // Fetch questionnaires
   const { data: questionnaires = [], isLoading } = useQuery({
@@ -119,17 +128,39 @@ export default function Questionnaires() {
 
   const isAdmin = userRole === "admin";
 
+  const fetchSchools = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("children")
+        .select("school")
+        .not("school", "is", null);
+
+      if (error) throw error;
+
+      const uniqueSchools = Array.from(new Set(data?.map(item => item.school).filter(Boolean))) as string[];
+      setSchools(uniqueSchools.sort());
+    } catch (error) {
+      console.error("Error fetching schools:", error);
+    }
+  };
+
   // Fetch children for parent link generation
   const { data: children = [] } = useQuery({
-    queryKey: ["children"],
+    queryKey: ["children", schoolFilter],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No user");
 
-      const { data, error } = await supabase
+      let query = supabase
         .from("children")
-        .select("id, name")
-        .order("name");
+        .select("id, name, school");
+
+      // Filter by school if admin has selected a specific school
+      if (isAdmin && schoolFilter && schoolFilter !== 'all') {
+        query = query.eq('school', schoolFilter);
+      }
+
+      const { data, error } = await query.order("name");
 
       if (error) throw error;
       return data;
@@ -239,6 +270,41 @@ export default function Questionnaires() {
               )}
             </div>
           </MotionDiv>
+
+          {isAdmin && schools.length > 0 && (
+            <MotionDiv
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="mb-6"
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">Filtros de Administrador</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex gap-4 items-end">
+                    <div className="flex-1">
+                      <Label htmlFor="school-filter">Escuela</Label>
+                      <Select value={schoolFilter} onValueChange={setSchoolFilter}>
+                        <SelectTrigger id="school-filter">
+                          <SelectValue placeholder="Todas las escuelas" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todas las escuelas</SelectItem>
+                          {schools.map((school) => (
+                            <SelectItem key={school} value={school}>
+                              {school}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </MotionDiv>
+          )}
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-2 max-w-md" data-tutorial="questionnaires-tabs">
