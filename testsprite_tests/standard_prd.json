@@ -1,0 +1,141 @@
+{
+  "meta": {
+    "project": "SEEDUMOTOR",
+    "date": "2026-01-21",
+    "prepared_by": "Software Development Manager"
+  },
+  "product_overview": "SEEDUMOTOR is an integrated platform designed to manage and enhance motor skills development through AI-powered training, academic records management, evaluations, and interactive learning style assessments. It provides user authentication, comprehensive dashboards, and administrative tools to customize reports and AI model training configurations.",
+  "core_goals": [
+    "Provide a secure and seamless authentication system for users.",
+    "Enable efficient management of children profiles and academic records.",
+    "Facilitate motor skills evaluations and learning style assessments through interactive questionnaires.",
+    "Offer AI-driven model training to improve evaluation accuracy.",
+    "Allow administrators to configure and customize PDF report generation.",
+    "Deliver user-friendly interfaces with guided tutorials to ease feature adoption."
+  ],
+  "key_features": [
+    "User authentication with login and signup functionality.",
+    "Dashboard providing an overview and access to key modules.",
+    "Children management system for handling profiles and related data.",
+    "Academic record management to track learning progress.",
+    "Evaluation module for conducting and reviewing motor skill assessments.",
+    "Learning style assessment tools to personalize user experience.",
+    "Comprehensive questionnaires management: create, edit, take, and view results.",
+    "AI Training interface for configuring datasets and initiating AI model training with progress monitoring and metrics display.",
+    "Report generation and PDF report settings editor with templates, logos, color customization, and section management.",
+    "Parent links and resources to support users' family engagement.",
+    "Interactive step-by-step tutorials (Joyride) on key pages to enhance user onboarding."
+  ],
+  "user_flow_summary": [
+    "User accesses the platform and logs in via /auth; upon successful authentication, redirected to /dashboard.",
+    "First-time users are guided through an interactive tutorial on the dashboard and other key pages (/children, /evaluations, /reports).",
+    "Users manage children profiles and academic records via respective pages.",
+    "Evaluations and learning style assessments are conducted through guided questionnaires.",
+    "Administrators access specialized routes for AI model training (/admin/training) and report customization (/admin/report-settings), with dedicated tutorials.",
+    "Users can generate, preview, and download customized reports in PDF format.",
+    "Parents access curated resources and questionnaires via parent links pages."
+  ],
+  "validation_criteria": [
+    "Authentication flow must correctly handle login and redirect to dashboard.",
+    "Interactive tutorials must appear on first visits to /dashboard, /children, /evaluations, /reports, /admin/training, and /admin/report-settings.",
+    "AI Training module must allow dataset configuration, initiate training, show progress, update metrics (accuracy, F1-score), display confusion matrix, and enable metrics download as JSON.",
+    "Report settings editor must support report type and template selection, logo uploads, color customization, section order and toggle, save changes, and show preview.",
+    "Core functional pages must load securely and display data accurately.",
+    "LocalStorage must accurately track tutorial completion status; tutorial retrigger possible by clearing storage or using incognito mode.",
+    "End-to-end user flows including authentication, data management, evaluations, AI training, and report generation must be tested and verified for correctness."
+  ],
+  "code_summary": {
+    "tech_stack": [
+      "TypeScript",
+      "React",
+      "Vite",
+      "TailwindCSS",
+      "Supabase"
+    ],
+    "features": [
+      {
+        "name": "AI Training",
+        "description": "Interface for AI model training or configuration.",
+        "files": [
+          "src/pages/AITraining.tsx"
+        ]
+      },
+      {
+        "name": "Academic Record",
+        "description": "Management of academic records.",
+        "files": [
+          "src/pages/AcademicRecord.tsx"
+        ]
+      },
+      {
+        "name": "Authentication",
+        "description": "User authentication (login/signup).",
+        "files": [
+          "src/pages/Auth.tsx"
+        ]
+      },
+      {
+        "name": "Children Management",
+        "description": "Managing children profiles and data.",
+        "files": [
+          "src/pages/Children.tsx"
+        ]
+      },
+      {
+        "name": "Dashboard",
+        "description": "Main dashboard view.",
+        "files": [
+          "src/pages/Dashboard.tsx"
+        ]
+      },
+      {
+        "name": "Evaluations",
+        "description": "Managing and viewing evaluations.",
+        "files": [
+          "src/pages/Evaluations.tsx"
+        ]
+      },
+      {
+        "name": "Learning Style Assessment",
+        "description": "Assessment tools for learning styles.",
+        "files": [
+          "src/pages/LearningStyleAssessment.tsx"
+        ]
+      },
+      {
+        "name": "Profile",
+        "description": "User profile management.",
+        "files": [
+          "src/pages/Profile.tsx"
+        ]
+      },
+      {
+        "name": "Questionnaires",
+        "description": "Managing, editing, and taking questionnaires.",
+        "files": [
+          "src/pages/Questionnaires.tsx",
+          "src/pages/QuestionnaireManage.tsx",
+          "src/pages/QuestionnaireEdit.tsx",
+          "src/pages/QuestionnaireTake.tsx",
+          "src/pages/QuestionnaireResult.tsx"
+        ]
+      },
+      {
+        "name": "Reports",
+        "description": "Generating and viewing reports.",
+        "files": [
+          "src/pages/Reports.tsx",
+          "src/pages/ReportSettings.tsx"
+        ]
+      },
+      {
+        "name": "Parent Links",
+        "description": "Links and resources for parents.",
+        "files": [
+          "src/pages/ParentLinks.tsx",
+          "src/pages/ParentQuestionnairePublic.tsx"
+        ]
+      }
+    ]
+  }
+}

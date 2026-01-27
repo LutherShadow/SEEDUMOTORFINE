@@ -1,0 +1,94 @@
+{
+    "tech_stack": [
+        "TypeScript",
+        "React",
+        "Vite",
+        "TailwindCSS",
+        "Supabase"
+    ],
+    "features": [
+        {
+            "name": "AI Training",
+            "description": "Interface for AI model training or configuration.",
+            "files": [
+                "src/pages/AITraining.tsx"
+            ]
+        },
+        {
+            "name": "Academic Record",
+            "description": "Management of academic records.",
+            "files": [
+                "src/pages/AcademicRecord.tsx"
+            ]
+        },
+        {
+            "name": "Authentication",
+            "description": "User authentication (login/signup).",
+            "files": [
+                "src/pages/Auth.tsx"
+            ]
+        },
+        {
+            "name": "Children Management",
+            "description": "Managing children profiles and data.",
+            "files": [
+                "src/pages/Children.tsx"
+            ]
+        },
+        {
+            "name": "Dashboard",
+            "description": "Main dashboard view.",
+            "files": [
+                "src/pages/Dashboard.tsx"
+            ]
+        },
+        {
+            "name": "Evaluations",
+            "description": "Managing and viewing evaluations.",
+            "files": [
+                "src/pages/Evaluations.tsx"
+            ]
+        },
+        {
+            "name": "Learning Style Assessment",
+            "description": "Assessment tools for learning styles.",
+            "files": [
+                "src/pages/LearningStyleAssessment.tsx"
+            ]
+        },
+        {
+            "name": "Profile",
+            "description": "User profile management.",
+            "files": [
+                "src/pages/Profile.tsx"
+            ]
+        },
+        {
+            "name": "Questionnaires",
+            "description": "Managing, editing, and taking questionnaires.",
+            "files": [
+                "src/pages/Questionnaires.tsx",
+                "src/pages/QuestionnaireManage.tsx",
+                "src/pages/QuestionnaireEdit.tsx",
+                "src/pages/QuestionnaireTake.tsx",
+                "src/pages/QuestionnaireResult.tsx"
+            ]
+        },
+        {
+            "name": "Reports",
+            "description": "Generating and viewing reports.",
+            "files": [
+                "src/pages/Reports.tsx",
+                "src/pages/ReportSettings.tsx"
+            ]
+        },
+        {
+            "name": "Parent Links",
+            "description": "Links and resources for parents.",
+            "files": [
+                "src/pages/ParentLinks.tsx",
+                "src/pages/ParentQuestionnairePublic.tsx"
+            ]
+        }
+    ]
+}

@@ -1,0 +1,18 @@
+{
+  "status": "commited",
+  "type": "frontend",
+  "scope": "codebase",
+  "localEndpoint": "http://localhost:8080",
+  "loginUser": "admin@gmail.com",
+  "loginPassword": "561509",
+  "executionArgs": {
+    "projectName": "SEEDUMOTORFINE",
+    "projectPath": "c:\\Users\\mercado\\Documents\\SEEDUMOTOR\\SEEDUMOTORFINE",
+    "testIds": [],
+    "additionalInstruction": "",
+    "envs": {
+      "API_KEY": "sk-user-7K9DaIh5xj8MO_JSshUKEjExiDoVABVnFvw6zmc1VRmGz6jq2KkthFrqci4xPo5GymUTJG3DkLT8_HGHQIkxHLTMt0X_ExVl4AlYX9xdqmPkqzdFywjuMJXuYM52h19XDI8"
+    }
+  },
+  "proxy": "http://d7ba4b62-b56f-499f-8178-a2ced83b1d24:auXQtLEJDghmdso5zc6qFPOpqkkRdPT4@tun.testsprite.com:8080"
+}

@@ -1,0 +1,53 @@
+# Instrucciones de Prueba para TestSprite - Proyecto SEEDUMOTOR
+
+Este documento describe los flujos de prueba principales para validar la funcionalidad del proyecto, incluyendo interfaces administrativas y tutoriales.
+
+## 1. Prerrequisitos
+- **Credenciales de Administrador**: Asegúrate de tener acceso a una cuenta con permisos administrativos o crea una nueva cuenta y verifica si tiene acceso a las rutas protegidas (/admin/*).
+- **Base de Datos**: Verificar que la conexión a Supabase esté activa.
+
+## 2. Flujo de Autenticación
+1.  **Ingreso**: Navegar a la página de inicio (/) y seleccionar "Iniciar Sesión" o "Comenzar".
+2.  **Login**: En `/auth`, ingresar correo y contraseña válidos.
+3.  **Verificación**: Confirmar redirección exitosa al Dashboard (`/dashboard`).
+
+## 3. Verificación de Tutoriales
+El sistema cuenta con guías interactivas (Joyride). Verificar su aparición en primera visita:
+1.  **Dashboard**: Al entrar a `/dashboard` por primera vez, debe iniciarse el tour de bienvenida.
+2.  **Gestión de Aprendientes**: Navegar a `/children`. Verificar tour de 5 pasos.
+3.  **Evaluaciones**: Navegar a `/evaluations`. Verificar tour de 7 pasos.
+4.  **Reportes**: Navegar a `/reports`. Verificar tour de 8 pasos.
+
+## 4. Interfaces Administrativas y Avanzadas
+
+### A. Entrenamiento de Modelo IA
+-   **Ruta**: `/admin/training`
+-   **Tutorial**: Confirmar que se activa `aiTrainingTutorial` ("Bienvenido al módulo de Entrenamiento de IA").
+-   **Acciones a probar**:
+    1.  Configurar muestras de dataset (Total, Entrenamiento, Validación).
+    2.  Clic en "Iniciar Entrenamiento".
+    3.  Verificar barra de progreso y finalización exitosa.
+    4.  Revisar actualización de métricas (Precisión, F1-Score) y Matriz de Confusión.
+    5.  Probar botón "Descargar Métricas" (debe generar un JSON).
+
+### B. Editor de Reportes PDF (Configuración de Reportes)
+-   **Ruta**: `/admin/report-settings`
+-   **Tutorial**: Confirmar que se activa `reportSettingsTutorial` ("Bienvenido al Editor de Reportes PDF").
+-   **Acciones a probar**:
+    1.  Selector de Tipo de Reporte (Motricidad, Cornell, etc.).
+    2.  Selector de Plantilla (Clásica, Moderna, Minimalista).
+    3.  Carga de Logos (Institucional y Pie de página).
+    4.  Personalización de colores (Color Picker).
+    5.  Edición de secciones (ordenar, activar/desactivar).
+    6.  Guardar cambios y verificar vista previa.
+
+## 5. Resumen de Rutas Críticas
+-   `/auth` - Autenticación
+-   `/dashboard` - Panel Principal
+-   `/children` - Lista de Alumnos
+-   `/evaluations` - Evaluaciones Motrices
+-   `/reports` - Reportes
+-   `/admin/training` - Entrenamiento IA
+-   `/admin/report-settings` - Editor PDF
+
+**Nota**: Si los tutoriales no aparecen, verificar si ya se completaron previamente (se guardan en localStorage). Para reiniciar pruebas, borrar localStorage o usar modo incógnito.

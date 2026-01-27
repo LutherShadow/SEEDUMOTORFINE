@@ -1,0 +1,477 @@
+[
+  {
+    "id": "TC001",
+    "title": "Successful User Login",
+    "description": "Verify that users can log in successfully with valid credentials and are redirected to the dashboard.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the /auth login page"
+      },
+      {
+        "type": "action",
+        "description": "Enter valid username/email and password"
+      },
+      {
+        "type": "action",
+        "description": "Click on the login button"
+      },
+      {
+        "type": "assertion",
+        "description": "User is authenticated and redirected to /dashboard"
+      },
+      {
+        "type": "assertion",
+        "description": "Dashboard page loads securely and displays the overview data accurately"
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "Failed Login with Invalid Credentials",
+    "description": "Verify system behavior when incorrect username/email or password is provided during login.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the /auth login page"
+      },
+      {
+        "type": "action",
+        "description": "Enter invalid username/email and/or password"
+      },
+      {
+        "type": "action",
+        "description": "Click on the login button"
+      },
+      {
+        "type": "assertion",
+        "description": "Display an appropriate error message indicating authentication failure"
+      },
+      {
+        "type": "assertion",
+        "description": "User remains on the login page and is not redirected"
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "Signup New User Account",
+    "description": "Validate the signup process for new users with required data and successful account creation.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the /auth signup page"
+      },
+      {
+        "type": "action",
+        "description": "Fill in valid signup information (email, password, required profile details)"
+      },
+      {
+        "type": "action",
+        "description": "Submit the signup form"
+      },
+      {
+        "type": "assertion",
+        "description": "Account is created successfully and user is redirected to /dashboard"
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "Dashboard Tutorial Display on First Visit",
+    "description": "Verify that the interactive tutorial (Joyride) appears on the user's first visit to the dashboard.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Clear localStorage to remove tutorial completion status"
+      },
+      {
+        "type": "action",
+        "description": "Login and navigate to /dashboard"
+      },
+      {
+        "type": "assertion",
+        "description": "Interactive tutorial starts automatically on the dashboard"
+      },
+      {
+        "type": "action",
+        "description": "Complete the tutorial steps"
+      },
+      {
+        "type": "assertion",
+        "description": "localStorage correctly marks tutorial as completed to prevent auto-show on subsequent visits"
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "Tutorial Retrigger by Clearing LocalStorage",
+    "description": "Ensure that clearing localStorage allows the tutorials to be triggered again on revisiting key pages.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Complete tutorials on all key pages including /dashboard, /children, /evaluations, /reports, /admin/training, /admin/report-settings"
+      },
+      {
+        "type": "action",
+        "description": "Clear localStorage or open a new incognito session"
+      },
+      {
+        "type": "action",
+        "description": "Revisit each key page"
+      },
+      {
+        "type": "assertion",
+        "description": "Tutorials appear again on first visits of each page"
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "Children Profile Creation and Management",
+    "description": "Test creation, editing, and deletion of children profiles in the children management system.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /children page"
+      },
+      {
+        "type": "action",
+        "description": "Create a new child profile with valid details"
+      },
+      {
+        "type": "assertion",
+        "description": "New child profile is saved and visible in the list"
+      },
+      {
+        "type": "action",
+        "description": "Edit the existing child profile to update details"
+      },
+      {
+        "type": "assertion",
+        "description": "Updated details are saved and displayed correctly"
+      },
+      {
+        "type": "action",
+        "description": "Delete a child profile"
+      },
+      {
+        "type": "assertion",
+        "description": "Child profile is removed from the list"
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "Academic Record Management",
+    "description": "Verify adding, editing, and viewing academic records linked to children profiles.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /AcademicRecord page"
+      },
+      {
+        "type": "action",
+        "description": "Select a child profile to manage academic records"
+      },
+      {
+        "type": "action",
+        "description": "Add new academic records with valid data"
+      },
+      {
+        "type": "assertion",
+        "description": "New academic records are saved and displayed correctly"
+      },
+      {
+        "type": "action",
+        "description": "Edit existing academic records"
+      },
+      {
+        "type": "assertion",
+        "description": "Edited academic record details are updated properly"
+      },
+      {
+        "type": "action",
+        "description": "View academic record history for the child"
+      },
+      {
+        "type": "assertion",
+        "description": "Academic records are accurately displayed with correct details"
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "Evaluation Module Questionnaire Flow",
+    "description": "Verify that users can take motor skills evaluations via guided questionnaires and view correct results.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Evaluations page"
+      },
+      {
+        "type": "action",
+        "description": "Select an existing evaluation questionnaire or create a new one"
+      },
+      {
+        "type": "action",
+        "description": "Complete all questionnaire steps with valid inputs"
+      },
+      {
+        "type": "assertion",
+        "description": "Evaluation results are calculated and displayed correctly"
+      },
+      {
+        "type": "action",
+        "description": "Review past evaluation results for accuracy"
+      },
+      {
+        "type": "assertion",
+        "description": "Results correspond correctly to the inputs entered"
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "Learning Style Assessment Flow",
+    "description": "Test the complete process of taking learning style assessments and receiving personalized outputs.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /LearningStyleAssessment page"
+      },
+      {
+        "type": "action",
+        "description": "Initiate a new learning style assessment questionnaire"
+      },
+      {
+        "type": "action",
+        "description": "Complete all required questions"
+      },
+      {
+        "type": "assertion",
+        "description": "Assessment results are generated and displayed with appropriate personalized recommendations"
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Questionnaire Management: Create, Edit, Take, and View Results",
+    "description": "Verify creation, editing, answering, and result viewing for questionnaires involved in evaluations and assessments.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /Questionnaires page"
+      },
+      {
+        "type": "action",
+        "description": "Create a new questionnaire with multiple question types"
+      },
+      {
+        "type": "assertion",
+        "description": "New questionnaire saves successfully and is listed"
+      },
+      {
+        "type": "action",
+        "description": "Edit the questionnaire to modify questions and options"
+      },
+      {
+        "type": "assertion",
+        "description": "Edits are saved and reflected in the questionnaire"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /QuestionnaireTake and complete the questionnaire"
+      },
+      {
+        "type": "assertion",
+        "description": "Responses are saved and evaluation logic triggers correctly"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /QuestionnaireResult to view past answers and results"
+      },
+      {
+        "type": "assertion",
+        "description": "Results correspond accurately to questionnaire answers"
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "AI Model Training Workflow",
+    "description": "Test dataset configuration, training initiation, progress monitoring, metrics display, confusion matrix visualization, and metrics JSON download in AI Training module.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login as administrator and navigate to /admin/training"
+      },
+      {
+        "type": "action",
+        "description": "Configure training dataset parameters via the interface"
+      },
+      {
+        "type": "action",
+        "description": "Start the AI model training"
+      },
+      {
+        "type": "assertion",
+        "description": "Training progress is displayed with up to date progress bar or status"
+      },
+      {
+        "type": "assertion",
+        "description": "After completion, accuracy, F1-score metrics and confusion matrix are shown"
+      },
+      {
+        "type": "action",
+        "description": "Download the training metrics as a JSON file"
+      },
+      {
+        "type": "assertion",
+        "description": "JSON file contains valid and complete training metrics data"
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "PDF Report Settings Editor Functionality",
+    "description": "Validate all customization capabilities and save/preview functionality of the report settings editor.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login as administrator and navigate to /admin/report-settings"
+      },
+      {
+        "type": "action",
+        "description": "Select different report types and templates"
+      },
+      {
+        "type": "action",
+        "description": "Upload logos and apply color customizations"
+      },
+      {
+        "type": "action",
+        "description": "Change section order and toggle visibility of report sections"
+      },
+      {
+        "type": "action",
+        "description": "Save the report settings changes"
+      },
+      {
+        "type": "assertion",
+        "description": "Settings save confirmation is shown"
+      },
+      {
+        "type": "action",
+        "description": "Generate report preview"
+      },
+      {
+        "type": "assertion",
+        "description": "Preview reflects the customized settings including logos, colors, and section order"
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "Secure Loading and Data Accuracy on Core Functional Pages",
+    "description": "Verify all main pages load securely (https, authentication) and display the correct related data.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "After login, visit core pages: /dashboard, /children, /AcademicRecord, /Evaluations, /Reports"
+      },
+      {
+        "type": "assertion",
+        "description": "Each page loads without error over secure protocol"
+      },
+      {
+        "type": "assertion",
+        "description": "Displayed data matches expected results stored in the backend database"
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "End-to-End User Flow Validation",
+    "description": "Complete end-to-end tests covering authentication, children profile and academic records management, evaluations, AI training, and report generation to verify overall system correctness.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login with valid user"
+      },
+      {
+        "type": "action",
+        "description": "Create a child profile and add academic records"
+      },
+      {
+        "type": "action",
+        "description": "Conduct a motor skills evaluation and complete learning style assessment"
+      },
+      {
+        "type": "action",
+        "description": "If logged in as admin, configure AI training and start model training"
+      },
+      {
+        "type": "action",
+        "description": "Configure and generate PDF reports for the child"
+      },
+      {
+        "type": "assertion",
+        "description": "All steps complete successfully, data flows correctly, and results are consistent across modules"
+      }
+    ]
+  },
+  {
+    "id": "TC015",
+    "title": "Parent Links and Resources Access",
+    "description": "Verify parents can access curated resources and public questionnaires via parent links pages.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /ParentLinks page"
+      },
+      {
+        "type": "assertion",
+        "description": "Parent resources and links are visible and accessible"
+      },
+      {
+        "type": "action",
+        "description": "Open a link to a public parent questionnaire (/ParentQuestionnairePublic) and complete it"
+      },
+      {
+        "type": "assertion",
+        "description": "Questionnaire completes successfully and submits responses"
+      }
+    ]
+  }
+]
