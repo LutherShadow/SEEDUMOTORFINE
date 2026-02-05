@@ -63,17 +63,24 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ settings }) => {
                 </div>
               )}
 
-              {/* Title with classic typography */}
-              <div className="text-center space-y-6 max-w-2xl">
-                <h1 className="text-4xl font-serif font-bold tracking-wide" style={{ color: settings.primary_color }}>
-                  REPORTE DE EVALUACIÓN
-                </h1>
+              {/* Title with premium layout */}
+              <div className="text-center space-y-8 max-w-2xl py-12">
+                <div className="space-y-2">
+                  <p className="text-sm uppercase tracking-[0.4em] font-medium" style={{ color: settings.primary_color }}>
+                    Documento Oficial
+                  </p>
+                  <h1 className="text-5xl font-serif font-bold tracking-tight" style={{ color: settings.primary_color }}>
+                    REPORTE DE<br />EVALUACIÓN
+                  </h1>
+                </div>
 
-                <div className="h-px bg-gradient-to-r from-transparent via-current to-transparent mx-16" style={{ color: settings.primary_color }} />
-
-                <p className="text-lg font-serif text-muted-foreground leading-relaxed px-8">
-                  {settings.header_text}
-                </p>
+                <div className="flex items-center justify-center gap-4">
+                  <div className="h-px w-12 bg-current opacity-30" style={{ color: settings.primary_color }} />
+                  <p className="text-lg font-serif italic text-muted-foreground whitespace-pre-wrap max-w-md">
+                    {settings.header_text}
+                  </p>
+                  <div className="h-px w-12 bg-current opacity-30" style={{ color: settings.primary_color }} />
+                </div>
               </div>
 
               {/* Ornamental bottom border */}
@@ -147,16 +154,19 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ settings }) => {
               )}
 
               {/* Modern title layout */}
-              <div className="flex-1 flex flex-col justify-center space-y-8">
+              <div className="flex-1 flex flex-col justify-center space-y-10">
                 <div className="space-y-4">
-                  <div className="w-16 h-1.5 rounded-full" style={{ backgroundColor: settings.primary_color }} />
-                  <h1 className="text-6xl font-bold tracking-tight leading-tight" style={{ color: settings.primary_color }}>
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-1 rounded-full" style={{ backgroundColor: settings.primary_color }} />
+                    <p className="text-xs font-bold uppercase tracking-[0.3em] opacity-60">Insight Report</p>
+                  </div>
+                  <h1 className="text-7xl font-extrabold tracking-tight leading-[0.9]" style={{ color: settings.primary_color }}>
                     REPORTE<br />
-                    <span className="text-4xl text-muted-foreground font-normal">de Evaluación</span>
+                    <span className="text-5xl opacity-80 font-light">EVALUATIVO</span>
                   </h1>
                 </div>
 
-                <p className="text-xl text-muted-foreground max-w-lg leading-relaxed">
+                <p className="text-xl text-muted-foreground max-w-lg leading-relaxed border-l-4 pl-6" style={{ borderColor: settings.primary_color }}>
                   {settings.header_text}
                 </p>
               </div>
@@ -272,14 +282,15 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ settings }) => {
     );
   };
 
-  const renderInternalPage = (title: string, content: string | undefined, type: 'introduction' | 'recommendations' | 'conclusion', showSection: boolean = true) => {
+  const renderInternalPage = (title: string, content: string | undefined, pageIndex: number, sectionId: string, showSection: boolean = true) => {
+    const pageNum = (pageIndex + 2).toString().padStart(2, '0');
     if (!showSection) return null;
     if (settings.template === 'classic') {
       return (
         <Card className="w-full aspect-[8.5/11] bg-white shadow-2xl overflow-hidden">
           <div className="h-full flex flex-col p-12">
-            {/* Classic header */}
-            <div className="flex items-center justify-between pb-6 mb-6" style={{ borderBottom: `2px double ${settings.primary_color}` }}>
+            {/* Polished header matching PDF */}
+            <div className="flex items-center justify-between pb-4 mb-8" style={{ borderBottom: `1px solid rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)` }}>
               {settings.logo_urls.length > 0 && (
                 <img
                   src={settings.logo_urls[0]}
@@ -288,11 +299,9 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ settings }) => {
                 />
               )}
               <div className="flex-1 text-right">
-                <div className="inline-block px-4 py-1 border" style={{ borderColor: settings.primary_color }}>
-                  <span className="text-xs font-serif tracking-wider" style={{ color: settings.primary_color }}>
-                    PÁGINA {type === 'introduction' ? '02' : type === 'recommendations' ? '03' : '04'}
-                  </span>
-                </div>
+                <p className="text-xs font-bold uppercase tracking-widest" style={{ color: settings.primary_color }}>
+                  {settings.content_company_name || "Sistema Educativo"}
+                </p>
               </div>
             </div>
 
@@ -310,23 +319,27 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ settings }) => {
                 <div className="h-px bg-gradient-to-r from-current to-transparent" style={{ color: settings.primary_color }} />
               </div>
 
-              <div className="space-y-4 text-base text-muted-foreground leading-relaxed font-serif">
-                {content ? (
-                  <p>{content}</p>
-                ) : (
-                  <p className="italic opacity-60">
-                    {type === 'introduction' && 'Aquí aparecerá el texto de introducción personalizado...'}
-                    {type === 'recommendations' && 'Aquí aparecerán las recomendaciones personalizadas...'}
-                    {type === 'conclusion' && 'Aquí aparecerá el texto de conclusión personalizado...'}
-                  </p>
-                )}
+              <div className="space-y-4 text-base text-[#282828] leading-relaxed font-serif whitespace-pre-wrap">
+                {sectionId !== 'recommendations' ? (
+                  content ? (
+                    <p>
+                      {content.split(/(\*\*.*?\*\*)/g).map((part, i) =>
+                        part.startsWith('**') && part.endsWith('**') ?
+                          <strong key={i}>{part.slice(2, -2)}</strong> : part
+                      )}
+                    </p>
+                  ) : (
+                    <p className="italic opacity-40">
+                      Contenido de {title} aparecerá aquí...
+                    </p>
+                  )
+                ) : null}
               </div>
-
-              {type === 'recommendations' && (
+              {sectionId === 'recommendations' && (
                 <div className="space-y-3 pt-4">
                   {content && content.length > 0 ? (
-                    // Si hay contenido, intentar dividirlo en puntos
-                    content.split('\n').filter(line => line.trim()).slice(0, 3).map((rec, num) => (
+                    // Mostrar todos los puntos del chunk actual
+                    content.split('\n').filter(line => line.trim()).map((rec, num) => (
                       <div key={num} className="flex gap-3 p-3 border" style={{ borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.2)` }}>
                         <span className="text-lg font-serif font-bold" style={{ color: settings.primary_color }}>{num + 1}.</span>
                         <span className="text-sm text-muted-foreground font-serif">{rec.replace(/^[-•]\s*/, '')}</span>
@@ -345,9 +358,17 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ settings }) => {
               )}
             </div>
 
-            {/* Classic footer */}
-            <div className="pt-6 mt-6 text-center" style={{ borderTop: `2px double ${settings.primary_color}` }}>
-              <p className="text-xs text-muted-foreground font-serif">{settings.footer_text}</p>
+            {/* Polished footer matching PDF */}
+            <div className="pt-4 mt-auto border-t" style={{ borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)` }}>
+              <div className="flex justify-between items-center text-[10px] text-muted-foreground">
+                <p>{settings.footer_text || "Reporte Informativo"}</p>
+                <p>www.sistemaeducativo.com</p>
+              </div>
+              <div className="flex justify-center mt-2">
+                <div className="px-3 py-1 rounded text-[10px] font-bold" style={{ backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.1)`, color: settings.primary_color }}>
+                  {pageNum}
+                </div>
+              </div>
             </div>
           </div>
         </Card>
@@ -363,7 +384,7 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ settings }) => {
 
             <div className="flex-1 flex flex-col p-12 pl-16">
               {/* Modern header */}
-              <div className="flex items-center justify-between mb-10">
+              <div className="flex items-center justify-between mb-8">
                 {settings.logo_urls.length > 0 && (
                   <img
                     src={settings.logo_urls[0]}
@@ -371,11 +392,10 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ settings }) => {
                     className="h-10 object-contain"
                   />
                 )}
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: settings.primary_color }} />
-                  <span className="text-xs font-semibold tracking-wider" style={{ color: settings.primary_color }}>
-                    0{type === 'introduction' ? '2' : type === 'recommendations' ? '3' : '4'}
-                  </span>
+                <div className="text-right">
+                  <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: settings.primary_color }}>
+                    {settings.content_company_name || "Sistema Educativo"}
+                  </p>
                 </div>
               </div>
 
@@ -388,22 +408,26 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ settings }) => {
                   </h2>
                 </div>
 
-                <div className="space-y-4 text-base text-muted-foreground leading-relaxed">
-                  {content ? (
-                    <p>{content}</p>
-                  ) : (
-                    <p className="italic opacity-60">
-                      {type === 'introduction' && 'Aquí aparecerá el texto de introducción personalizado...'}
-                      {type === 'recommendations' && 'Aquí aparecerán las recomendaciones personalizadas...'}
-                      {type === 'conclusion' && 'Aquí aparecerá el texto de conclusión personalizado...'}
-                    </p>
-                  )}
+                <div className="space-y-4 text-base text-[#282828] leading-relaxed whitespace-pre-wrap">
+                  {sectionId !== 'recommendations' ? (
+                    content ? (
+                      <p>
+                        {content.split(/(\*\*.*?\*\*)/g).map((part, i) =>
+                          part.startsWith('**') && part.endsWith('**') ?
+                            <strong key={i}>{part.slice(2, -2)}</strong> : part
+                        )}
+                      </p>
+                    ) : (
+                      <p className="italic opacity-40">
+                        Contenido de {title} aparecerá aquí...
+                      </p>
+                    )
+                  ) : null}
                 </div>
-
-                {type === 'recommendations' && (
+                {sectionId === 'recommendations' && (
                   <div className="space-y-3 pt-4">
                     {content && content.length > 0 ? (
-                      content.split('\n').filter(line => line.trim()).slice(0, 3).map((rec, num) => (
+                      content.split('\n').filter(line => line.trim()).map((rec, num) => (
                         <div key={num} className="flex gap-4 p-4 rounded-lg" style={{ backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.05)` }}>
                           <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold" style={{ backgroundColor: settings.primary_color }}>
                             {num + 1}
@@ -425,10 +449,17 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ settings }) => {
                 )}
               </div>
 
-              {/* Modern footer */}
-              <div className="pt-6 mt-6">
-                <div className="h-px w-full" style={{ background: `linear-gradient(90deg, ${settings.primary_color} 0%, transparent 100%)` }} />
-                <p className="text-xs text-muted-foreground mt-4">{settings.footer_text}</p>
+              {/* Modern footer matching PDF */}
+              <div className="pt-4 mt-auto border-t" style={{ borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.2)` }}>
+                <div className="flex justify-between items-center text-[10px] text-muted-foreground">
+                  <p>{settings.footer_text || "Reporte Informativo"}</p>
+                  <p>www.sistemaeducativo.com</p>
+                </div>
+                <div className="flex justify-center mt-2">
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] text-white font-bold" style={{ backgroundColor: settings.primary_color }}>
+                    {pageNum}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -450,7 +481,7 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ settings }) => {
               />
             )}
             <span className="text-xs text-muted-foreground font-light">
-              {type === 'introduction' ? '02' : type === 'recommendations' ? '03' : '04'}
+              {pageNum}
             </span>
           </div>
 
@@ -464,21 +495,25 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ settings }) => {
             </div>
 
             <div className="space-y-4 text-sm text-muted-foreground leading-relaxed font-light">
-              {content ? (
-                <p>{content}</p>
-              ) : (
-                <p className="italic opacity-60">
-                  {type === 'introduction' && 'Aquí aparecerá el texto de introducción personalizado...'}
-                  {type === 'recommendations' && 'Aquí aparecerán las recomendaciones personalizadas...'}
-                  {type === 'conclusion' && 'Aquí aparecerá el texto de conclusión personalizado...'}
-                </p>
-              )}
+              {sectionId !== 'recommendations' ? (
+                content ? (
+                  <p>
+                    {content.split(/(\*\*.*?\*\*)/g).map((part, i) =>
+                      part.startsWith('**') && part.endsWith('**') ?
+                        <strong key={i} style={{ fontWeight: 600 }}>{part.slice(2, -2)}</strong> : part
+                    )}
+                  </p>
+                ) : (
+                  <p className="italic opacity-60">
+                    Contenido de {title}...
+                  </p>
+                )
+              ) : null}
             </div>
-
-            {type === 'recommendations' && (
+            {sectionId === 'recommendations' && (
               <div className="space-y-4 pt-6">
                 {content && content.length > 0 ? (
-                  content.split('\n').filter(line => line.trim()).slice(0, 3).map((rec, num) => (
+                  content.split('\n').filter(line => line.trim()).map((rec, num) => (
                     <div key={num} className="flex gap-4 pb-4" style={{ borderBottom: `1px solid rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.1)` }}>
                       <span className="text-sm font-light" style={{ color: settings.primary_color }}>{num + 1}</span>
                       <span className="text-sm text-muted-foreground font-light flex-1">{rec.replace(/^[-•]\s*/, '')}</span>
@@ -508,18 +543,10 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ settings }) => {
   // Get custom sections from report type template
   const template = getReportTypeTemplate(settings.report_type);
   const customSections = template?.custom_sections || [];
-
-  // Build dynamic section map
-  const sectionMap: Record<string, { title: string; content?: string; show: boolean }> = {};
-  customSections.forEach(section => {
-    sectionMap[section.id] = {
-      title: section.title,
-      content: settings[`content_${section.id}_text`],
-      show: true
-    };
-  });
-
   const sectionOrder = settings.section_order || customSections.map(s => s.id);
+
+  // Use a ref-like approach to track page count across maps
+  let globalPageIndex = 0;
 
   return (
     <div className="w-full h-full overflow-y-auto bg-muted/30 p-6">
@@ -529,19 +556,57 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({ settings }) => {
 
         {/* Render sections in custom order */}
         {sectionOrder.map((sectionId) => {
-          const section = sectionMap[sectionId as keyof typeof sectionMap];
-          if (!section || !section.show) return null;
+          const section = customSections.find(s => s.id === sectionId);
+          if (!section) return null;
 
-          return (
-            <div key={sectionId}>
-              {renderInternalPage(
-                section.title,
-                section.content,
-                sectionId as 'introduction' | 'recommendations' | 'conclusion',
-                section.show
-              )}
-            </div>
-          );
+          const rawContent = settings[`content_${sectionId}_text`] || '';
+
+          // Hybrid Split Logic: Accounts for both line height and total length
+          // Lowered thresholds to fit fixed aspect ratio cards better
+          const maxLinesPerChunk = 16;
+          const maxCharsPerChunk = 900;
+
+          const chunks: string[] = [];
+          const lines = rawContent.split('\n');
+          let currentChunkLines: string[] = [];
+          let currentChunkChars = 0;
+
+          lines.forEach(line => {
+            const lineChars = line.length;
+            if (currentChunkLines.length >= maxLinesPerChunk || (currentChunkChars + lineChars) > maxCharsPerChunk) {
+              if (currentChunkLines.length > 0) {
+                chunks.push(currentChunkLines.join('\n'));
+                currentChunkLines = [];
+                currentChunkChars = 0;
+              }
+            }
+            currentChunkLines.push(line);
+            currentChunkChars += lineChars;
+          });
+
+          if (currentChunkLines.length > 0) {
+            chunks.push(currentChunkLines.join('\n'));
+          }
+
+          // If empty but section exists, show at least one empty page if required
+          if (chunks.length === 0) chunks.push('');
+
+          return chunks.map((chunk, chunkIdx) => {
+            const currentPIndex = globalPageIndex;
+            globalPageIndex++;
+
+            return (
+              <div key={`${sectionId}-${chunkIdx}`} className="mb-8">
+                {renderInternalPage(
+                  chunkIdx === 0 ? section.title : `${section.title} (Cont.)`,
+                  chunk,
+                  currentPIndex,
+                  sectionId,
+                  chunkIdx === chunks.length - 1
+                )}
+              </div>
+            );
+          });
         })}
       </div>
     </div>

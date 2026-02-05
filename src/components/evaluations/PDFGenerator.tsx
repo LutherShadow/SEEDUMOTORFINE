@@ -46,6 +46,7 @@ interface Evaluation {
   test_6_observations: string | null;
   test_7_observations: string | null;
   test_8_observations: string | null;
+  additional_scores: any[] | null;
   children: {
     name: string;
   };
@@ -71,7 +72,7 @@ const generateQRCode = async (evaluationId: string, studentName: string, date: s
       timestamp: new Date().toISOString(),
       url: `https://seedumotorfine.netlify.app/evaluations/${evaluationId}`
     };
-    
+
     const qrDataURL = await QRCode.toDataURL(JSON.stringify(verificationData), {
       width: 80,
       margin: 1,
@@ -80,11 +81,34 @@ const generateQRCode = async (evaluationId: string, studentName: string, date: s
         light: '#FFFFFF'
       }
     });
-    
+
     return qrDataURL;
   } catch (error) {
     console.error('Error generating QR code:', error);
     return '';
+  }
+};
+
+// Generate chart with AI
+const generateChartWithAI = async (prompt: string, chartData: any): Promise<string | null> => {
+  try {
+    const { data, error } = await supabase.functions.invoke('generate-chart-image', {
+      body: { prompt, chartData }
+    });
+
+    if (error) {
+      console.error('Error generating chart with AI:', error);
+      return null;
+    }
+
+    if (data?.imageBase64) {
+      return `data:${data.mimeType || 'image/png'};base64,${data.imageBase64}`;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error calling AI chart API:', error);
+    return null;
   }
 };
 
@@ -98,20 +122,20 @@ export const generateIndividualPDF = async (evaluation: Evaluation) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  
+
   // Use custom margins from settings
-  const margins = settings?.page_margins 
-    ? (typeof settings.page_margins === 'object' 
-        ? settings.page_margins as { top: number; right: number; bottom: number; left: number }
-        : { top: 20, right: 20, bottom: 20, left: 20 })
+  const margins = settings?.page_margins
+    ? (typeof settings.page_margins === 'object'
+      ? settings.page_margins as { top: number; right: number; bottom: number; left: number }
+      : { top: 20, right: 20, bottom: 20, left: 20 })
     : { top: 20, right: 20, bottom: 20, left: 20 };
-  
+
   let yPos = margins.top;
 
   // Get template colors
   const getTemplateColors = () => {
     const template = settings?.template || 'formal';
-    switch(template) {
+    switch (template) {
       case 'colorido':
         return {
           primary: hexToRgb(settings?.primary_color || '#1e40af'),
@@ -151,7 +175,7 @@ export const generateIndividualPDF = async (evaluation: Evaluation) => {
     doc.setTextColor(200, 200, 200);
     doc.setFontSize(60);
     doc.setFont(fontFamily, "bold");
-    
+
     const watermarkX = pageWidth / 2;
     const watermarkY = pageHeight / 2;
     doc.text(settings.watermark_text, watermarkX, watermarkY, {
@@ -176,8 +200,8 @@ export const generateIndividualPDF = async (evaluation: Evaluation) => {
     const qrSize = 25;
     let qrX = 0;
     let qrY = 0;
-    
-    switch(settings.qr_code_position) {
+
+    switch (settings.qr_code_position) {
       case 'top-right':
         qrX = pageWidth - margins.right - qrSize;
         qrY = margins.top;
@@ -191,7 +215,7 @@ export const generateIndividualPDF = async (evaluation: Evaluation) => {
         qrY = pageHeight - margins.bottom - qrSize - 5;
         break;
     }
-    
+
     doc.addImage(qrCodeDataURL, 'PNG', qrX, qrY, qrSize, qrSize);
   }
 
@@ -199,20 +223,20 @@ export const generateIndividualPDF = async (evaluation: Evaluation) => {
   const logoUrls = settings?.logo_urls && Array.isArray(settings.logo_urls) && settings.logo_urls.length > 0
     ? (settings.logo_urls as string[])
     : (settings?.logo_url ? [settings.logo_url] : []);
-  
+
   if (logoUrls.length > 0) {
     try {
       const logoSize = 40; // Tamaño predeterminado para logos principales
       const logoSpacing = 10;
       const totalWidth = (logoSize * logoUrls.length) + (logoSpacing * (logoUrls.length - 1));
       let startX = margins.left;
-      
+
       if (settings?.logo_position === 'center') {
         startX = (pageWidth - totalWidth) / 2;
       } else if (settings?.logo_position === 'right') {
         startX = pageWidth - totalWidth - margins.right;
       }
-      
+
       for (let i = 0; i < logoUrls.length; i++) {
         try {
           const logoData = await loadImage(logoUrls[i]);
@@ -247,7 +271,7 @@ export const generateIndividualPDF = async (evaluation: Evaluation) => {
     doc.setFillColor(colors.headerBg[0], colors.headerBg[1], colors.headerBg[2]);
     doc.rect(margins.left, yPos - 5, pageWidth - margins.left - margins.right, headerFontSize + 10, 'F');
   }
-  
+
   doc.setFontSize(headerFontSize);
   doc.setFont(fontFamily, "bold");
   doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
@@ -263,13 +287,13 @@ export const generateIndividualPDF = async (evaluation: Evaluation) => {
     doc.setTextColor(80, 80, 80);
     doc.text(settings.institution_name, pageWidth / 2, yPos, { align: "center" });
     yPos += 5;
-    
+
     if (settings?.institution_address) {
       doc.setFontSize(8);
       doc.text(settings.institution_address, pageWidth / 2, yPos, { align: "center" });
       yPos += 4;
     }
-    
+
     if (settings?.institution_phone || settings?.institution_email) {
       doc.setFontSize(8);
       const contactInfo = [settings.institution_phone, settings.institution_email].filter(Boolean).join(' | ');
@@ -287,7 +311,7 @@ export const generateIndividualPDF = async (evaluation: Evaluation) => {
   doc.setFont(fontFamily, "normal");
   doc.text(evaluation.children.name, margins.left + 30, yPos);
   yPos += 7;
-  
+
   doc.setFont(fontFamily, "bold");
   doc.text("Fecha:", margins.left, yPos);
   doc.setFont(fontFamily, "normal");
@@ -339,14 +363,14 @@ export const generateIndividualPDF = async (evaluation: Evaluation) => {
       if (yPos > pageHeight - margins.bottom - 60) {
         doc.addPage();
         yPos = margins.top;
-        
+
         // Re-add watermark on new page
         if (settings?.show_watermark && settings?.watermark_text) {
           doc.saveGraphicsState();
           doc.setTextColor(200, 200, 200);
           doc.setFontSize(60);
           doc.setFont(fontFamily, "bold");
-          
+
           const watermarkX = pageWidth / 2;
           const watermarkY = pageHeight / 2;
           doc.text(settings.watermark_text, watermarkX, watermarkY, {
@@ -360,7 +384,7 @@ export const generateIndividualPDF = async (evaluation: Evaluation) => {
       // Activity title with background
       doc.setFillColor(colors.activityBg[0], colors.activityBg[1], colors.activityBg[2]);
       doc.rect(margins.left, yPos - 5, pageWidth - margins.left - margins.right, 10, 'F');
-      
+
       doc.setFontSize(13);
       doc.setFont(fontFamily, "bold");
       doc.setTextColor(template === 'colorido' ? colors.primary[0] : 0, template === 'colorido' ? colors.primary[1] : 0, template === 'colorido' ? colors.primary[2] : 0);
@@ -396,6 +420,67 @@ export const generateIndividualPDF = async (evaluation: Evaluation) => {
     }
   });
 
+  // Additional AI Activities
+  if (evaluation.additional_scores && evaluation.additional_scores.length > 0) {
+    evaluation.additional_scores.forEach((activity: any, index: number) => {
+      if (yPos > pageHeight - margins.bottom - 40) {
+        doc.addPage();
+        yPos = margins.top;
+
+        // Re-add watermark on new page
+        if (settings?.show_watermark && settings?.watermark_text) {
+          doc.saveGraphicsState();
+          doc.setTextColor(200, 200, 200);
+          doc.setFontSize(60);
+          doc.setFont(fontFamily, "bold");
+
+          const watermarkX = pageWidth / 2;
+          const watermarkY = pageHeight / 2;
+          doc.text(settings.watermark_text, watermarkX, watermarkY, {
+            align: "center",
+            angle: 45
+          });
+          doc.restoreGraphicsState();
+        }
+      }
+
+      // Activity title with background (different color for AI)
+      if (template === 'colorido') {
+        doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2], 0.1);
+      } else {
+        doc.setFillColor(245, 245, 245);
+      }
+      doc.rect(margins.left, yPos - 5, pageWidth - margins.left - margins.right, 10, 'F');
+
+      doc.setFontSize(13);
+      doc.setFont(fontFamily, "bold");
+      const textColor = template === 'colorido' ? colors.primary : [0, 0, 0];
+      doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+      doc.text(`${activity.name} (IA)`, margins.left + 2, yPos);
+      yPos += 8;
+
+      // Score
+      doc.setFontSize(bodyFontSize);
+      doc.setFont(fontFamily, "normal");
+      doc.setTextColor(0, 0, 0);
+      const scoreLabel = SCORE_LABELS[activity.score] || "N/A";
+      doc.text(`Puntuación: ${activity.score} - ${scoreLabel}`, margins.left + 2, yPos);
+      yPos += 7;
+
+      // Observations if any
+      if (activity.observations) {
+        doc.setFont(fontFamily, "italic");
+        doc.setFontSize(10);
+        doc.setTextColor(60, 60, 60);
+        const obsLines = doc.splitTextToSize(`Observaciones: ${activity.observations}`, pageWidth - margins.left - margins.right - 4);
+        doc.text(obsLines, margins.left + 2, yPos);
+        yPos += obsLines.length * 5 + 5;
+      }
+
+      yPos += 5;
+    });
+  }
+
   // Add signature if enabled
   if (settings?.show_signature && settings?.signature_url) {
     try {
@@ -403,9 +488,9 @@ export const generateIndividualPDF = async (evaluation: Evaluation) => {
       const sigWidth = 40;
       const sigHeight = 20;
       const sigY = pageHeight - margins.bottom - sigHeight - 35;
-      
+
       doc.addImage(signatureData, 'PNG', margins.left, sigY, sigWidth, sigHeight);
-      
+
       if (settings.signature_text) {
         doc.setFontSize(9);
         doc.setFont(fontFamily, "normal");
@@ -434,12 +519,12 @@ export const generateIndividualPDF = async (evaluation: Evaluation) => {
     ? (settings.footer_logo_urls as string[])
     : [];
   const footerText = settings?.footer_text || "Generado por el Sistema de Evaluación Educativa";
-  
+
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
-    
+
     const footerY = pageHeight - margins.bottom - 35;
-    
+
     // Footer line separator
     if (settings?.show_footer_border !== false) {
       if (template === 'colorido') {
@@ -451,7 +536,7 @@ export const generateIndividualPDF = async (evaluation: Evaluation) => {
       }
       doc.line(margins.left, footerY, pageWidth - margins.right, footerY);
     }
-    
+
     // Footer logos
     if (footerLogoUrls.length > 0) {
       try {
@@ -460,7 +545,7 @@ export const generateIndividualPDF = async (evaluation: Evaluation) => {
         const totalLogoWidth = (footerLogoSize * footerLogoUrls.length) + (logoSpacing * (footerLogoUrls.length - 1));
         const startX = (pageWidth - totalLogoWidth) / 2;
         const logoY = footerY + 3;
-        
+
         for (let j = 0; j < footerLogoUrls.length; j++) {
           try {
             const logoData = await loadImage(footerLogoUrls[j]);
@@ -474,7 +559,7 @@ export const generateIndividualPDF = async (evaluation: Evaluation) => {
         console.error("Error loading footer logos:", error);
       }
     }
-    
+
     doc.setFontSize(8);
     doc.setFont(fontFamily, "italic");
     doc.setTextColor(100, 100, 100);
@@ -496,19 +581,19 @@ export const generateGroupPDF = async (evaluations: Evaluation[]) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  
+
   // Use custom margins from settings
-  const margins = settings?.page_margins 
-    ? (typeof settings.page_margins === 'object' 
-        ? settings.page_margins as { top: number; right: number; bottom: number; left: number }
-        : { top: 20, right: 20, bottom: 20, left: 20 })
+  const margins = settings?.page_margins
+    ? (typeof settings.page_margins === 'object'
+      ? settings.page_margins as { top: number; right: number; bottom: number; left: number }
+      : { top: 20, right: 20, bottom: 20, left: 20 })
     : { top: 20, right: 20, bottom: 20, left: 20 };
 
   // Load logos and signature once if exist
   const logoUrls = settings?.logo_urls && Array.isArray(settings.logo_urls) && settings.logo_urls.length > 0
     ? (settings.logo_urls as string[])
     : (settings?.logo_url ? [settings.logo_url] : []);
-  
+
   const logoImages: string[] = [];
   for (const url of logoUrls) {
     try {
@@ -518,11 +603,11 @@ export const generateGroupPDF = async (evaluations: Evaluation[]) => {
       console.error("Error loading logo:", error);
     }
   }
-  
+
   const footerLogoUrls = settings?.footer_logo_urls && Array.isArray(settings.footer_logo_urls) && settings.footer_logo_urls.length > 0
     ? (settings.footer_logo_urls as string[])
     : [];
-  
+
   const footerLogoImages: string[] = [];
   for (const url of footerLogoUrls) {
     try {
@@ -532,13 +617,13 @@ export const generateGroupPDF = async (evaluations: Evaluation[]) => {
       console.error("Error loading footer logo:", error);
     }
   }
-  
+
   let signatureImg: string | null = null;
 
   // Get template colors
   const getTemplateColors = () => {
     const template = settings?.template || 'formal';
-    switch(template) {
+    switch (template) {
       case 'colorido':
         return {
           primary: hexToRgb(settings?.primary_color || '#1e40af'),
@@ -582,7 +667,7 @@ export const generateGroupPDF = async (evaluations: Evaluation[]) => {
 
   for (let index = 0; index < evaluations.length; index++) {
     const evaluation = evaluations[index];
-    
+
     if (index > 0) {
       doc.addPage();
     }
@@ -595,7 +680,7 @@ export const generateGroupPDF = async (evaluations: Evaluation[]) => {
       doc.setTextColor(200, 200, 200);
       doc.setFontSize(60);
       doc.setFont(fontFamily, "bold");
-      
+
       const watermarkX = pageWidth / 2;
       const watermarkY = pageHeight / 2;
       doc.text(settings.watermark_text, watermarkX, watermarkY, {
@@ -617,8 +702,8 @@ export const generateGroupPDF = async (evaluations: Evaluation[]) => {
         const qrSize = 25;
         let qrX = 0;
         let qrY = 0;
-        
-        switch(settings.qr_code_position) {
+
+        switch (settings.qr_code_position) {
           case 'top-right':
             qrX = pageWidth - margins.right - qrSize;
             qrY = margins.top;
@@ -632,7 +717,7 @@ export const generateGroupPDF = async (evaluations: Evaluation[]) => {
             qrY = pageHeight - margins.bottom - qrSize - 5;
             break;
         }
-        
+
         doc.addImage(qrCodeDataURL, 'PNG', qrX, qrY, qrSize, qrSize);
       }
     }
@@ -643,13 +728,13 @@ export const generateGroupPDF = async (evaluations: Evaluation[]) => {
       const logoSpacing = 10;
       const totalWidth = (logoSize * logoImages.length) + (logoSpacing * (logoImages.length - 1));
       let startX = margins.left;
-      
+
       if (settings?.logo_position === 'center') {
         startX = (pageWidth - totalWidth) / 2;
       } else if (settings?.logo_position === 'right') {
         startX = pageWidth - totalWidth - margins.right;
       }
-      
+
       for (let i = 0; i < logoImages.length; i++) {
         const logoX = startX + (i * (logoSize + logoSpacing));
         doc.addImage(logoImages[i], 'PNG', logoX, yPos, logoSize, logoSize * 0.6);
@@ -676,7 +761,7 @@ export const generateGroupPDF = async (evaluations: Evaluation[]) => {
       doc.setFillColor(colors.headerBg[0], colors.headerBg[1], colors.headerBg[2]);
       doc.rect(margins.left, yPos - 5, pageWidth - margins.left - margins.right, headerFontSize + 10, 'F');
     }
-    
+
     doc.setFontSize(headerFontSize);
     doc.setFont(fontFamily, "bold");
     doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
@@ -692,13 +777,13 @@ export const generateGroupPDF = async (evaluations: Evaluation[]) => {
       doc.setTextColor(80, 80, 80);
       doc.text(settings.institution_name, pageWidth / 2, yPos, { align: "center" });
       yPos += 5;
-      
+
       if (settings?.institution_address) {
         doc.setFontSize(8);
         doc.text(settings.institution_address, pageWidth / 2, yPos, { align: "center" });
         yPos += 4;
       }
-      
+
       if (settings?.institution_phone || settings?.institution_email) {
         doc.setFontSize(8);
         const contactInfo = [settings.institution_phone, settings.institution_email].filter(Boolean).join(' | ');
@@ -716,7 +801,7 @@ export const generateGroupPDF = async (evaluations: Evaluation[]) => {
     doc.setFont(fontFamily, "normal");
     doc.text(evaluation.children.name, margins.left + 30, yPos);
     yPos += 7;
-    
+
     doc.setFont(fontFamily, "bold");
     doc.text("Fecha:", margins.left, yPos);
     doc.setFont(fontFamily, "normal");
@@ -768,14 +853,14 @@ export const generateGroupPDF = async (evaluations: Evaluation[]) => {
         if (yPos > pageHeight - margins.bottom - 60) {
           doc.addPage();
           yPos = margins.top;
-          
+
           // Re-add watermark on new page
           if (settings?.show_watermark && settings?.watermark_text) {
             doc.saveGraphicsState();
             doc.setTextColor(200, 200, 200);
             doc.setFontSize(60);
             doc.setFont(fontFamily, "bold");
-            
+
             const watermarkX = pageWidth / 2;
             const watermarkY = pageHeight / 2;
             doc.text(settings.watermark_text, watermarkX, watermarkY, {
@@ -789,7 +874,7 @@ export const generateGroupPDF = async (evaluations: Evaluation[]) => {
         // Activity title with background
         doc.setFillColor(colors.activityBg[0], colors.activityBg[1], colors.activityBg[2]);
         doc.rect(margins.left, yPos - 5, pageWidth - margins.left - margins.right, 10, 'F');
-        
+
         doc.setFontSize(13);
         doc.setFont(fontFamily, "bold");
         doc.setTextColor(template === 'colorido' ? colors.primary[0] : 0, template === 'colorido' ? colors.primary[1] : 0, template === 'colorido' ? colors.primary[2] : 0);
@@ -830,9 +915,9 @@ export const generateGroupPDF = async (evaluations: Evaluation[]) => {
       const sigWidth = 40;
       const sigHeight = 20;
       const sigY = pageHeight - margins.bottom - sigHeight - 35;
-      
+
       doc.addImage(signatureImg, 'PNG', margins.left, sigY, sigWidth, sigHeight);
-      
+
       if (settings.signature_text) {
         doc.setFontSize(9);
         doc.setFont(fontFamily, "normal");
@@ -858,9 +943,9 @@ export const generateGroupPDF = async (evaluations: Evaluation[]) => {
   const footerText = settings?.footer_text || "Generado por el Sistema de Evaluación Educativa";
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
-    
+
     const footerY = pageHeight - margins.bottom - 35;
-    
+
     // Footer line separator
     if (settings?.show_footer_border !== false) {
       if (template === 'colorido') {
@@ -872,7 +957,7 @@ export const generateGroupPDF = async (evaluations: Evaluation[]) => {
       }
       doc.line(margins.left, footerY, pageWidth - margins.right, footerY);
     }
-    
+
     // Footer logos
     if (footerLogoImages.length > 0) {
       const footerLogoSize = 18; // Tamaño predeterminado para logos de footer
@@ -880,13 +965,13 @@ export const generateGroupPDF = async (evaluations: Evaluation[]) => {
       const totalLogoWidth = (footerLogoSize * footerLogoImages.length) + (logoSpacing * (footerLogoImages.length - 1));
       const startX = (pageWidth - totalLogoWidth) / 2;
       const logoY = footerY + 3;
-      
+
       for (let j = 0; j < footerLogoImages.length; j++) {
         const logoX = startX + (j * (footerLogoSize + logoSpacing));
         doc.addImage(footerLogoImages[j], 'PNG', logoX, logoY, footerLogoSize, footerLogoSize * 0.6);
       }
     }
-    
+
     doc.setFontSize(8);
     doc.setFont(fontFamily, "italic");
     doc.setTextColor(100, 100, 100);

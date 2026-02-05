@@ -14,6 +14,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { ResetTourButton } from "@/components/tutorial/ResetTourButton";
 import { useTheme } from "@/components/ThemeProvider";
 import { motion, Variants } from "framer-motion";
+import { AIConnectionManager } from "@/components/admin/AIConnectionManager";
 
 interface Profile {
   id: string;
@@ -431,6 +432,15 @@ const Profile = () => {
 
               </CardContent>
             </Card>
+
+            {/* Admin Section: AI Configuration */}
+            {profile.role === 'admin' && (
+              <div className="pt-4">
+                {/* Lazy load or direct import */}
+                <AIConnectionManager />
+              </div>
+            )}
+
           </MotionDiv>
         </MotionDiv>
       </main>

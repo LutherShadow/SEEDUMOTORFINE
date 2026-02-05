@@ -1,4 +1,4 @@
-export type ReportType = 'motricidad' | 'cornell' | 'chaea' | 'tam' | 'competencias' | 'prediccion';
+export type ReportType = 'motricidad' | 'cornell' | 'chaea' | 'tam' | 'competencias' | 'prediccion' | 'custom_questionnaire';
 
 export interface ReportSection {
   id: string;
@@ -318,6 +318,31 @@ El modelo recomienda monitoreo quincenal de estos factores y ajuste proactivo de
       primary_color: '#8B5CF6',
       template: 'modern',
       section_order: ['estado_actual', 'proyecciones', 'areas_enfoque', 'factores_riesgo', 'recomendaciones']
+    }
+  },
+  {
+    id: 'custom_questionnaire',
+    name: 'Reporte de Cuestionario Personalizado',
+    description: 'Plantilla adaptable para cuestionarios creados por el usuario',
+    icon: '📝',
+    custom_sections: [
+      { id: 'introduction', title: 'Introducción', description: 'Contexto del cuestionario' },
+      { id: 'resultados', title: 'Resultados Detallados', description: 'Análisis de las respuestas obtenidas' },
+      { id: 'recommendations', title: 'Sugerencias y Plan de Acción', description: 'Pasos a seguir basados en los resultados' },
+      { id: 'conclusion', title: 'Conclusiones Generales', description: 'Resumen final' }
+    ],
+    defaultConfig: {
+      header_text: 'Reporte de Cuestionario Personalizado',
+      footer_text: 'Documento generado basado en respuestas de cuestionario dinámico',
+      content_introduction_text: 'Este reporte presenta un análisis de los datos recolectados mediante el cuestionario personalizado. La información contenida en este documento se basa en las respuestas proporcionadas por el evaluado y busca proporcionar una visión estructurada de su situación actual.',
+      content_resultados_text: 'Aquí se detallarán los resultados específicos encontrados en el cuestionario. El sistema analiza las tendencias y patrones en las respuestas para ofrecer una visión clara de los hallazgos principales.',
+      content_recommendations_text: 'Basado en los resultados obtenidos, se sugieren las siguientes acciones para fomentar el desarrollo y la mejora en las áreas identificadas.',
+      content_conclusion_text: 'En conclusión, los datos sugieren una trayectoria positiva con áreas específicas que requieren atención focalizada. Se recomienda un seguimiento continuo según el plan de acción propuesto.',
+      content_company_name: 'Institución Educativa',
+      content_responsible_agent: 'Evaluador Responsable',
+      primary_color: '#4F46E5',
+      template: 'minimal',
+      section_order: ['introduction', 'resultados', 'recommendations', 'conclusion']
     }
   }
 ];

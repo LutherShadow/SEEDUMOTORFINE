@@ -55,6 +55,7 @@ interface Evaluation {
   test_7_observations: string | null;
   test_8_observations: string | null;
   observations: string | null;
+  additional_scores: any[] | null;
   children: {
     name: string;
     grade: string | null;
@@ -287,7 +288,7 @@ const Evaluations = () => {
   };
 
   const calculateAverage = (evaluation: Evaluation) => {
-    const scores = [
+    const standardScores = [
       evaluation.test_1_score,
       evaluation.test_2_score,
       evaluation.test_3_score,
@@ -298,12 +299,18 @@ const Evaluations = () => {
       evaluation.test_8_score
     ].filter((s): s is number => s !== null && typeof s === 'number');
 
-    if (scores.length === 0) return { average: "0.00", completed: 0, total: 8 };
+    const additionalScores = (evaluation.additional_scores || [])
+      .map(s => s.score)
+      .filter((s): s is number => s !== null && typeof s === 'number');
 
-    const sum = scores.reduce((acc, score) => acc + score, 0);
-    const average = (sum / scores.length).toFixed(2);
+    const allScores = [...standardScores, ...additionalScores];
 
-    return { average, completed: scores.length, total: 8 };
+    if (allScores.length === 0) return { average: "0.00", completed: 0, total: 8 + (evaluation.additional_scores?.length || 0) };
+
+    const sum = allScores.reduce((acc, score) => acc + score, 0);
+    const average = (sum / allScores.length).toFixed(2);
+
+    return { average, completed: allScores.length, total: 8 + (evaluation.additional_scores?.length || 0) };
   };
 
   const handleExportExcel = () => {
@@ -902,7 +909,7 @@ const Evaluations = () => {
                     <p className="text-sm text-muted-foreground mb-2">{activity.skill}</p>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="font-bold">Puntuación:</span>
-                      <Badge>{score} - {scoreInfo?.label}</Badge>
+                      <Badge variant={getScoreLabel(score).color as any}>{score} - {scoreInfo?.label}</Badge>
                     </div>
                     {scoreInfo && (
                       <p className="text-sm text-muted-foreground mb-2">{scoreInfo.description}</p>
@@ -911,6 +918,27 @@ const Evaluations = () => {
                       <div className="mt-3 p-3 bg-muted rounded">
                         <p className="text-sm font-medium mb-1">Observaciones:</p>
                         <p className="text-sm">{observations}</p>
+                      </div>
+                    )}
+                  </Card>
+                );
+              })}
+              {selectedEvaluation?.additional_scores?.map((activity: any, index: number) => {
+                const scoreInfo = SCORE_LABELS.find(s => s.value === activity.score);
+                return (
+                  <Card key={`additional-${index}`} className="p-4 border-primary/20 bg-primary/5">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h4 className="font-medium">{activity.name}</h4>
+                      <Badge variant="secondary" className="bg-primary/20 text-primary text-xs">IA</Badge>
+                    </div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="font-bold text-sm">Puntuación:</span>
+                      <Badge variant={getScoreLabel(activity.score).color as any}>{activity.score} - {scoreInfo?.label}</Badge>
+                    </div>
+                    {activity.observations && (
+                      <div className="mt-3 p-3 bg-muted rounded">
+                        <p className="text-sm font-medium mb-1">Observaciones:</p>
+                        <p className="text-sm">{activity.observations}</p>
                       </div>
                     )}
                   </Card>

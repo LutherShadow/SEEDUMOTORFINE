@@ -1,130 +1,179 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.76.0';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Missing Supabase configurations (URL/Key)');
+    }
+
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
-    if (!geminiApiKey) {
-      throw new Error('GEMINI_API_KEY not configured');
-    }
-
     const body = await req.json();
-    const { evaluations, childName, childId } = body;
+    const { evaluations, childName, childId, existingActivities } = body;
 
-    if (!childId || !childName) {
-      throw new Error('Missing childId or childName');
+    console.log(`Generating creative suggestions for ${childName} (ID: ${childId})`);
+
+    // 1. Fetch ALL Active AI Configurations
+    const { data: configs } = await supabase
+      .from('ai_settings')
+      .select('*')
+      .eq('is_active', true);
+
+    if (!configs || configs.length === 0) {
+      console.error('AI Configuration missing.');
+      const legacyKey = Deno.env.get('OPENROUTER_API_KEY');
+      if (!legacyKey) throw new Error('No AI provider found.');
+      // Fallback logic for legacy handled inside providers loop if needed
     }
 
-    // Simplified prompt - NO database queries before Gemini
-    const systemPrompt = `You are a pediatric development expert. Generate JSON suggestions.
+    // 2. Fetch RAG Context (Trained Model)
+    const { data: trainedModel } = await supabase
+      .from('ai_training_models')
+      .select('model_context, accuracy')
+      .order('trained_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-Required JSON format (NO MARKDOWN):
-{
-    "competencyIndex": { "overall": 50, "level": "medio", "visualMotor": 50, "precision": 50, "coordination": 50, "strength": 50, "learningVelocity": 50, "trend": "estable" },
-    "suggestions": [ { "activity": "Name", "type": "Type", "description": "Desc", "benefits": ["B1"], "expectedProgress": "Progress" } ],
-    "personalizedActivities": [ { "activityName": "Name", "activityType": "Fine/Gross Motor", "description": "Instructions", "difficultyLevel": "medio", "targetSkills": ["Skill"], "materialsNeeded": ["Material"], "durationMinutes": 15, "repetitionsRecommended": 3, "successCriteria": "Criteria", "progressionNotes": "Notes", "replacesActivityId": null, "aiConfidence": 0.9 } ],
-    "overallRecommendation": "Summary",
-    "developmentLevel": "medio"
-}`;
+    const ragContext = trainedModel?.model_context || "Enfoque en desarrollo motriz general.";
 
-    const recentEvals = (evaluations && Array.isArray(evaluations)) ? evaluations.slice(-3) : [];
-    const userPrompt = `Analyze ${childName}. Recent evaluations: ${JSON.stringify(recentEvals)}. Generate 3 suggestions and 3 personalized activities.`;
+    // 3. Prepare ADVANCED Prompt
+    const previousActivities = (existingActivities || []).join(', ');
 
-    // Call Gemini
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
+    const systemPrompt = `Actúa como un equipo multidisciplinario de expertos en desarrollo infantil, terapia ocupacional y pedagogía.
+        CONTEXTO CLÍNICO (RAG): "${ragContext}"
+        OBJETIVO: Diseñar intervenciones motrices ALTAMENTE PERSONALIZADAS e INNOVADORAS para ${childName}.
+        REGLAS: 1. NO REPETIR: [${previousActivities}]. 2. BÚSQUEDA DE NOVEDAD. 3. JUSTIFICACIÓN CLÍNICA. 4. JSON PURO.
+        FORMATO JSON: { "personalizedActivities": [ { "activityName": "...", "activityType": "...", "description": "...", "difficultyLevel": "...", "targetSkills": [...], "materialsNeeded": [...], "durationMinutes": 15, "repetitionsRecommended": 3, "successCriteria": "...", "progressionNotes": "...", "aiConfidence": 0.95 } ] }`;
 
-    const response = await fetch(geminiUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: systemPrompt + "\n\n" + userPrompt }] }],
-        generationConfig: { responseMimeType: "application/json" }
-      })
-    });
+    const recentEvals = (evaluations && Array.isArray(evaluations)) ? evaluations.slice(-2) : [];
+    const userPrompt = `Perfil del niño: ${childName}. Evaluaciones recientes (JSON): ${JSON.stringify(recentEvals)}. Genera 3 actividades DISRUPTIVAS e INNOVADORAS.`;
 
-    if (!response.ok) {
-      const txt = await response.text();
-      throw new Error(`Gemini Error: ${response.status}`);
-    }
+    // 4. Call AI with Tiered Logic
+    let jsonResponse = null;
+    let lastError = null;
 
-    const data = await response.json();
-    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawText) {
-      throw new Error("Empty AI response");
-    }
+    // --- Tier 1: OpenRouter (Primary for volume/diversity) ---
+    const orConfig = configs?.find(c => c.provider === 'openrouter');
+    if (orConfig || Deno.env.get('OPENROUTER_API_KEY')) {
+      try {
+        console.log("Attempting OpenRouter (Tier 1)...");
+        const apiKey = orConfig?.api_key || Deno.env.get('OPENROUTER_API_KEY');
+        let models = orConfig?.models || [];
+        if (orConfig?.model) models = [orConfig.model, ...models];
+        const fallbacks = ["google/gemma-3-27b-it:free", "google/gemini-2.0-flash-lite-preview-02-05:free"];
+        models = [...new Set([...models, ...fallbacks])];
 
-    const cleanText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-    const suggestions = JSON.parse(cleanText);
-
-    // Save to DB
-    if (evaluations && evaluations.length > 0) {
-      const latestEval = evaluations[evaluations.length - 1];
-
-      if (suggestions.competencyIndex) {
-        await supabase.from('competency_indices').insert({
-          child_id: childId,
-          evaluation_id: latestEval.id,
-          overall_index: suggestions.competencyIndex.overall || 0,
-          visual_motor_index: suggestions.competencyIndex.visualMotor || 0,
-          precision_index: suggestions.competencyIndex.precision || 0,
-          coordination_index: suggestions.competencyIndex.coordination || 0,
-          strength_index: suggestions.competencyIndex.strength || 0,
-          learning_velocity: suggestions.competencyIndex.learningVelocity || 0,
-          trend: suggestions.competencyIndex.trend || 'stable',
-          notes: `Gemini`
-        }).then(() => console.log('Competency saved')).catch(() => { });
-      }
-
-      if (suggestions.personalizedActivities && Array.isArray(suggestions.personalizedActivities)) {
-        const acts = suggestions.personalizedActivities.map((a: any) => ({
-          child_id: childId,
-          activity_name: a.activityName || 'Activity',
-          activity_type: a.activityType || 'General',
-          description: a.description || '',
-          difficulty_level: a.difficultyLevel || 'medio',
-          target_skills: a.targetSkills || [],
-          materials_needed: a.materialsNeeded || [],
-          duration_minutes: a.durationMinutes || 15,
-          repetitions_recommended: a.repetitionsRecommended || 3,
-          success_criteria: a.successCriteria || '',
-          progression_notes: a.progressionNotes || '',
-          ai_confidence: a.aiConfidence || 0.9,
-          is_active: true
-        }));
-        if (acts.length > 0) {
-          await supabase.from('personalized_activities').insert(acts).then(() => console.log('Activities saved')).catch(() => { });
+        for (const m of models) {
+          try {
+            const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+              method: "POST",
+              headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json", "HTTP-Referer": "https://seedumotor.com", "X-Title": "SEEDUMOTOR" },
+              body: JSON.stringify({ model: m, messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }] })
+            });
+            if (res.ok) {
+              const data = await res.json();
+              const responseText = data.choices[0]?.message?.content;
+              jsonResponse = parseJsonFromText(responseText);
+              if (jsonResponse) break;
+            }
+          } catch (e) { console.warn(`OR model ${m} failed:`, e.message); }
         }
-      }
-
-      await supabase.from('ai_results').insert({
-        evaluation_id: latestEval.id,
-        recommendations: suggestions.overallRecommendation || "Suggestions",
-        confidence_score: 0.95,
-        classification: suggestions.developmentLevel || 'medio'
-      }).then(() => console.log('Results saved')).catch(() => { });
+        if (jsonResponse) return successResponse(jsonResponse);
+      } catch (e) { console.warn("OpenRouter Tier failed:", e.message); }
     }
 
-    return new Response(JSON.stringify(suggestions), {
+    // --- Tier 2: Gemini (Backup) ---
+    const geminiConfig = configs?.find(c => c.provider === 'gemini');
+    if (geminiConfig) {
+      try {
+        console.log("Attempting Gemini (Tier 2)...");
+        const models = ["gemini-1.5-flash", "gemini-2.0-flash-exp"];
+        for (const m of models) {
+          for (const version of ["v1", "v1beta"]) {
+            try {
+              const url = `https://generativelanguage.googleapis.com/${version}/models/${m}:generateContent?key=${geminiConfig.api_key.trim()}`;
+              const res = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contents: [{ parts: [{ text: systemPrompt + "\n\n" + userPrompt }] }] })
+              });
+              if (res.ok) {
+                const data = await res.json();
+                const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                jsonResponse = parseJsonFromText(responseText);
+                if (jsonResponse) break;
+              }
+            } catch (e) { }
+          }
+          if (jsonResponse) break;
+        }
+        if (jsonResponse) return successResponse(jsonResponse);
+      } catch (e) { console.warn("Gemini Tier failed:", e.message); }
+    }
+
+    // --- Tier 3: OpenAI ---
+    const openaiConfig = configs?.find(c => c.provider === 'openai');
+    if (openaiConfig) {
+      try {
+        console.log("Attempting OpenAI (Tier 3)...");
+        const res = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${openaiConfig.api_key}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: openaiConfig.model || "gpt-4o-mini",
+            messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }]
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          jsonResponse = parseJsonFromText(data.choices[0]?.message?.content);
+        }
+        if (jsonResponse) return successResponse(jsonResponse);
+      } catch (e) { }
+    }
+
+    function parseJsonFromText(responseText: string) {
+      if (!responseText) return null;
+      const cleanText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+      const firstBrace = cleanText.indexOf('{');
+      const lastBrace = cleanText.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace !== -1) {
+        try { return JSON.parse(cleanText.substring(firstBrace, lastBrace + 1)); } catch (e) { return null; }
+      }
+      return null;
+    }
+
+    function successResponse(data: any) {
+      return new Response(JSON.stringify(data), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    // If AI failed completely
+    if (!jsonResponse) {
+      throw new Error(`No se pudo generar contenido. Detalle: ${lastError?.message || 'Rate limits or API errors'}`);
+    }
+
+    // 5. Clean up and return - Auto-save removed as per user request
+
+    return new Response(JSON.stringify(jsonResponse), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error: any) {
-    console.error('[FATAL]:', error.message);
+    console.error('[FATAL ERROR]:', error.message);
     return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
+      status: 500, // Return 500 so frontend catches it
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

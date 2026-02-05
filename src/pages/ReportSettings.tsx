@@ -9,13 +9,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Upload, Trash2, Settings, Save, FileText } from "lucide-react";
+import { ArrowLeft, Upload, Trash2, Settings, Save, FileText, Brain, Laptop, Sparkles, Wand2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { jsPDF } from "jspdf";
 import { contentTemplates, type ContentTemplate } from "@/lib/contentTemplates";
 import { reportTypeTemplates, getReportTypeTemplate, type ReportType } from "@/lib/reportTypeTemplates";
 import { ReportPreview } from "@/components/reports/ReportPreview";
 import { ReportSectionEditor, type ReportSection } from "@/components/reports/ReportSectionEditor";
+// import { OpenRouterConfig } from "@/components/admin/OpenRouterConfig";
 import { useTutorial } from "@/components/tutorial/TutorialProvider";
 import { reportSettingsTutorial } from "@/components/tutorial/tutorials";
 import { TutorialButton } from "@/components/tutorial/TutorialButton";
@@ -80,6 +81,8 @@ const ReportSettings: React.FC = () => {
     }
   }, [isAdmin, startTutorial]);
   const [saving, setSaving] = React.useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = React.useState(false);
+  const [savedSettingsSnapshot, setSavedSettingsSnapshot] = React.useState<string>('');
   const [settings, setSettings] = React.useState<ReportSettingsData>({
     id: "",
     // Usar "prediccion" como tipo por defecto, que es el principal en el editor
@@ -102,6 +105,51 @@ const ReportSettings: React.FC = () => {
     section_order: ['introduction', 'recommendations', 'conclusion']
   });
   const [pdfPreview, setPdfPreview] = React.useState<string | null>(null);
+  const [isRefining, setIsRefining] = React.useState<Record<string, boolean>>({});
+
+  const handleRefineText = async (sectionId: string, currentText: string) => {
+    if (!currentText || currentText.trim().length < 10) {
+      toast({
+        title: "Texto muy corto",
+        description: "Escribe un poco más para que la IA pueda ayudarte a optimizarlo.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsRefining(prev => ({ ...prev, [sectionId]: true }));
+    try {
+      const { data, error } = await supabase.functions.invoke('refine-report-text', {
+        body: {
+          text: currentText,
+          sectionTitle: sectionId,
+          reportType: settings.report_type
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.refinedText) {
+        setSettings(prev => ({
+          ...prev,
+          [`content_${sectionId}_text`]: data.refinedText
+        }));
+        toast({
+          title: "Texto Optimizado",
+          description: "La IA ha refinado el contenido para hacerlo más profesional.",
+        });
+      }
+    } catch (error: any) {
+      console.error('Error refining text:', error);
+      toast({
+        title: "Error al optimizar",
+        description: error.message || "No se pudo conectar con el servicio de IA.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsRefining(prev => ({ ...prev, [sectionId]: false }));
+    }
+  };
 
   // Initialize sections - will be updated when settings load
   const [reportSections, setReportSections] = React.useState<ReportSection[]>([
@@ -119,6 +167,14 @@ const ReportSettings: React.FC = () => {
       generatePDFPreview();
     }
   }, [settings]);
+
+  // Detect unsaved changes
+  React.useEffect(() => {
+    if (savedSettingsSnapshot) {
+      const currentSnapshot = JSON.stringify(settings);
+      setHasUnsavedChanges(currentSnapshot !== savedSettingsSnapshot);
+    }
+  }, [settings, savedSettingsSnapshot]);
 
   // Sync reportSections with settings - now works with any template
   React.useEffect(() => {
@@ -283,6 +339,9 @@ const ReportSettings: React.FC = () => {
         }
 
         setSettings(settingsObj);
+        // Save snapshot for change detection
+        setSavedSettingsSnapshot(JSON.stringify(settingsObj));
+        setHasUnsavedChanges(false);
 
         // Update report sections from saved data using template
         if (template && template.custom_sections) {
@@ -501,6 +560,7 @@ const ReportSettings: React.FC = () => {
       });
 
       await fetchSettings();
+      setHasUnsavedChanges(false);
     } catch (error: any) {
       console.error("Error saving settings:", error);
       toast({
@@ -522,33 +582,33 @@ const ReportSettings: React.FC = () => {
     } : { r: 142, g: 184, b: 181 };
   };
 
-  const generateChartWithGemini = async (prompt: string, chartData: any): Promise<string | null> => {
-    // DISABLED: Edge Function has persistent 500 errors
-    // Use placeholders instead until Edge Function is fixed
-    console.warn('Gemini chart generation disabled - Edge Function returns 500');
-    return null;
-
-    /* ORIGINAL CODE - DISABLED
+  const generateChartWithAI = async (prompt: string, chartData: any): Promise<string | null> => {
     try {
       const { data, error } = await supabase.functions.invoke('generate-chart-image', {
         body: { prompt, chartData }
       });
 
       if (error) {
-        console.error('Error generating chart with Gemini:', error);
+        console.error('Error generating chart with AI:', error);
         return null;
       }
+
+      console.log('Chart generated with provider:', data?.provider);
 
       if (data?.imageBase64) {
         return `data:${data.mimeType || 'image/png'};base64,${data.imageBase64}`;
       }
 
+      // If no image but text context, log it (could be used for local rendering later)
+      if (data?.textContext) {
+        console.log('Received text context for chart (no image):', data.textContext.substring(0, 200));
+      }
+
       return null;
     } catch (error) {
-      console.error('Error calling Gemini API:', error);
+      console.error('Error calling AI chart API:', error);
       return null;
     }
-    */
   };
 
   const generatePDFPreview = async () => {
@@ -558,55 +618,116 @@ const ReportSettings: React.FC = () => {
       const pageHeight = doc.internal.pageSize.getHeight();
       const brandColor = hexToRgb(settings.primary_color);
 
+      // Pre-load logo for header/footer
+      let headerLogoData: string | null = null;
+      if (settings.logo_urls && settings.logo_urls.length > 0) {
+        try {
+          headerLogoData = await loadImage(settings.logo_urls[0]);
+        } catch (e) {
+          console.error("Error pre-loading header logo:", e);
+        }
+      }
+
+      // Helper to add header/footer to internal pages
+      const addPageDecorations = (pageNumber: number) => {
+        const yPosDecor = 12;
+
+        // Header Logo
+        if (headerLogoData) {
+          try {
+            doc.addImage(headerLogoData, 'PNG', 15, yPosDecor, 25, 15);
+          } catch (e) {
+            console.error("Error adding header logo to page:", e);
+          }
+        }
+
+        // Header Text (brand name)
+        doc.setFontSize(10);
+        doc.setTextColor(brandColor.r, brandColor.g, brandColor.b);
+        doc.setFont("helvetica", "bold");
+        doc.text(settings.content_company_name || "Sistema Educativo", pageWidth - 15, yPosDecor + 10, { align: "right" });
+
+        // Decorative Line
+        doc.setDrawColor(brandColor.r, brandColor.g, brandColor.b);
+        doc.setLineWidth(0.5);
+        doc.line(15, yPosDecor + 18, pageWidth - 15, yPosDecor + 18);
+
+        // Footer
+        doc.line(15, pageHeight - 25, pageWidth - 15, pageHeight - 25);
+        doc.setFontSize(8);
+        doc.setTextColor(120, 120, 120);
+        doc.setFont("helvetica", "normal");
+        doc.text(settings.footer_text || "Reporte Informativo", 15, pageHeight - 15);
+        doc.text("www.sistemaeducativo.com", pageWidth - 15, pageHeight - 15, { align: "right" });
+
+        // Page Number badge
+        doc.setFillColor(brandColor.r, brandColor.g, brandColor.b, 0.1);
+        doc.rect(pageWidth / 2 - 10, pageHeight - 15, 20, 10, 'F');
+        doc.setTextColor(brandColor.r, brandColor.g, brandColor.b);
+        doc.text(`${pageNumber}`, pageWidth / 2, pageHeight - 8, { align: "center" });
+      };
+
       // ===== PÁGINA 1: PORTADA =====
       doc.setFillColor(255, 255, 255);
       doc.rect(0, 0, pageWidth, pageHeight, 'F');
 
-      // Background decorativo en portada
       if (settings.template === 'modern') {
         doc.setFillColor(brandColor.r, brandColor.g, brandColor.b, 0.05);
         doc.rect(0, pageHeight / 2, pageWidth, pageHeight / 2, 'F');
       }
 
-      // Logos en portada (centrados, tamaño grande)
-      let yPos = 30;
+      let yPosP = 30;
       if (settings.logo_urls.length > 0) {
         const logoSize = 50;
-        const spacing = 15;
-        const totalWidth = settings.logo_urls.length * logoSize + (settings.logo_urls.length - 1) * spacing;
-        let xPos = (pageWidth - totalWidth) / 2;
+        const spacingP = 15;
+        const totalWidth = settings.logo_urls.length * logoSize + (settings.logo_urls.length - 1) * spacingP;
+        let xPosP = (pageWidth - totalWidth) / 2;
 
         for (const logoUrl of settings.logo_urls) {
           try {
             const img = await loadImage(logoUrl);
-            doc.addImage(img, 'PNG', xPos, yPos, logoSize, logoSize * 0.6);
-            xPos += logoSize + spacing;
+            doc.addImage(img, 'PNG', xPosP, yPosP, logoSize, logoSize * 0.6);
+            xPosP += logoSize + spacingP;
           } catch (error) {
             console.error("Error loading logo:", error);
           }
         }
-        yPos += 50;
+        yPosP += 50;
       }
 
-      // Título principal de portada
-      doc.setFillColor(brandColor.r, brandColor.g, brandColor.b);
-      doc.rect(0, yPos, pageWidth, 40, 'F');
-
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(32);
+      // Polished Cover Page Title Section
+      doc.setTextColor(brandColor.r, brandColor.g, brandColor.b);
+      doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-      doc.text("REPORTE", pageWidth / 2, yPos + 15, { align: "center" });
-      doc.setFontSize(28);
-      doc.text(settings.header_text.toUpperCase(), pageWidth / 2, yPos + 30, { align: "center" });
-      yPos += 60;
+      doc.text("DOCUMENTO OFICIAL", pageWidth / 2, yPosP, { align: "center", charSpace: 2 });
+      yPosP += 8;
+
+      doc.setDrawColor(brandColor.r, brandColor.g, brandColor.b, 0.5);
+      doc.setLineWidth(0.8);
+      doc.line(pageWidth / 2 - 20, yPosP, pageWidth / 2 + 20, yPosP);
+      yPosP += 15;
+
+      doc.setFontSize(34);
+      doc.setFont("helvetica", "bold");
+      doc.text("REPORTE DE", pageWidth / 2, yPosP, { align: "center" });
+      yPosP += 12;
+      doc.text("EVALUACIÓN", pageWidth / 2, yPosP, { align: "center" });
+      yPosP += 20;
+
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "italic");
+      doc.setTextColor(100, 100, 100);
+      const subTitleSplit = doc.splitTextToSize(settings.header_text, pageWidth - 60);
+      doc.text(subTitleSplit, pageWidth / 2, yPosP, { align: "center" });
+      yPosP += (subTitleSplit.length * 7) + 25;
 
       // Fecha en portada
       doc.setTextColor(brandColor.r, brandColor.g, brandColor.b);
-      doc.setFontSize(18);
-      doc.setFont("helvetica", "normal");
-      const fecha = new Date().toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
-      doc.text(fecha.charAt(0).toUpperCase() + fecha.slice(1), pageWidth / 2, yPos, { align: "center" });
-      yPos += 20;
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      const fechaPort = new Date().toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+      doc.text(fechaPort.toUpperCase(), pageWidth / 2, yPosP, { align: "center", charSpace: 1 });
+      yPosP += 15;
 
       // Información del evaluador
       doc.setFontSize(12);
@@ -614,356 +735,130 @@ const ReportSettings: React.FC = () => {
       doc.text("Evaluador: Sistema Educativo", pageWidth / 2, pageHeight - 30, { align: "center" });
       doc.text("www.sistemaeducativo.com", pageWidth / 2, pageHeight - 20, { align: "center" });
 
-      // ===== PÁGINA 2: INTRODUCCIÓN Y ANÁLISIS =====
-      doc.addPage();
-      doc.setFillColor(255, 255, 255);
-      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+      const writeTextWithBold = (text: string, x: number, y: number, maxWidth: number, fontSize: number): number => {
+        const parts = text.split(/(\*\*.*?\*\*)/g);
+        let currentX = x;
+        let currentY = y;
+        const lineHeight = fontSize * 0.5;
 
-      // Header con logo pequeño
-      yPos = 15;
-      if (settings.logo_urls.length > 0) {
-        try {
-          const img = await loadImage(settings.logo_urls[0]);
-          doc.addImage(img, 'PNG', 15, yPos, 30, 18);
-        } catch (error) {
-          console.error("Error loading header logo:", error);
-        }
-      }
-
-      // Línea decorativa del header
-      doc.setDrawColor(brandColor.r, brandColor.g, brandColor.b);
-      doc.setLineWidth(0.5);
-      doc.line(15, yPos + 22, pageWidth - 15, yPos + 22);
-      yPos += 35;
-
-      // SECCIÓN: INTRODUCCIÓN
-      doc.setFontSize(16);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(brandColor.r, brandColor.g, brandColor.b);
-      doc.text("INTRODUCCIÓN", 15, yPos);
-      yPos += 10;
-
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(60, 60, 60);
-      const introText = "El presente reporte de evaluación presenta un análisis detallado del progreso y desarrollo de habilidades del aprendiente. Este documento consolida los resultados de evaluaciones realizadas, identificando fortalezas y áreas de oportunidad para el desarrollo continuo.";
-      const splitIntro = doc.splitTextToSize(introText, pageWidth - 30);
-      doc.text(splitIntro, 15, yPos);
-      yPos += splitIntro.length * 6 + 10;
-
-      // SECCIÓN: ANÁLISIS DE RESULTADOS
-      doc.setFontSize(16);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(brandColor.r, brandColor.g, brandColor.b);
-      doc.text("ANÁLISIS DE RESULTADOS", 15, yPos);
-      yPos += 10;
-
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(60, 60, 60);
-      const analysisText = "Los resultados de las evaluaciones muestran un progreso constante en las áreas evaluadas. El siguiente gráfico presenta la evolución del desempeño en los últimos períodos.";
-      const splitAnalysis = doc.splitTextToSize(analysisText, pageWidth - 30);
-      doc.text(splitAnalysis, 15, yPos);
-      yPos += splitAnalysis.length * 6 + 10;
-
-      // Generar gráfico de progreso con Gemini API
-      // DISABLED: Edge Function has persistent 500 errors
-      if (false && settings.use_gemini_charts) {
-        const progressChartData = {
-          labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
-          values: [65, 72, 78, 85, 88, 92],
-          type: 'line',
-          colors: [settings.primary_color]
-        };
-
-        const progressChartPrompt = `Genera un gráfico de líneas profesional que muestre la evolución del progreso del aprendiente. 
-        Datos: ${JSON.stringify(progressChartData)}
-        El gráfico debe tener:
-        - Eje X con los meses: Enero, Febrero, Marzo, Abril, Mayo, Junio
-        - Eje Y con valores de 0 a 100 (porcentaje de progreso)
-        - Una línea suave conectando los puntos con color ${settings.primary_color}
-        - Puntos marcadores en cada mes
-        - Fondo blanco limpio
-        - Cuadrícula sutil gris claro
-        - Título: "Evolución del Progreso"
-        - Etiquetas claras y legibles
-        - Tamaño: 800x400 píxeles`;
-
-        const chartImage = await generateChartWithGemini(progressChartPrompt, progressChartData);
-
-        if (chartImage) {
-          try {
-            doc.addImage(chartImage, 'PNG', 15, yPos, pageWidth - 30, 60);
-          } catch (error) {
-            console.error('Error adding chart image:', error);
-            // Fallback al placeholder
-            doc.setFillColor(brandColor.r, brandColor.g, brandColor.b, 0.1);
-            doc.rect(15, yPos, pageWidth - 30, 60, 'F');
-            doc.setDrawColor(brandColor.r, brandColor.g, brandColor.b);
-            doc.rect(15, yPos, pageWidth - 30, 60);
-            doc.setFontSize(10);
-            doc.setTextColor(brandColor.r, brandColor.g, brandColor.b);
-            doc.text("[Error al cargar gráfico]", pageWidth / 2, yPos + 30, { align: "center" });
+        parts.forEach((part) => {
+          if (part.startsWith('**') && part.endsWith('**')) {
+            doc.setFont("helvetica", "bold");
+            const boldText = part.slice(2, -2);
+            doc.text(boldText, currentX, currentY);
+            currentX += doc.getTextWidth(boldText);
+          } else {
+            doc.setFont("helvetica", "normal");
+            doc.text(part, currentX, currentY);
+            currentX += doc.getTextWidth(part);
           }
-        } else {
-          // Fallback si Gemini no está disponible
-          doc.setFillColor(brandColor.r, brandColor.g, brandColor.b, 0.1);
-          doc.rect(15, yPos, pageWidth - 30, 60, 'F');
-          doc.setDrawColor(brandColor.r, brandColor.g, brandColor.b);
-          doc.rect(15, yPos, pageWidth - 30, 60);
-          doc.setFontSize(10);
-          doc.setTextColor(brandColor.r, brandColor.g, brandColor.b);
-          doc.text("[Gráfico de progreso - Activar Gemini Charts]", pageWidth / 2, yPos + 30, { align: "center" });
-        }
-      } else {
-        // Placeholder cuando Gemini Charts está desactivado
-        doc.setFillColor(brandColor.r, brandColor.g, brandColor.b, 0.1);
-        doc.rect(15, yPos, pageWidth - 30, 60, 'F');
-        doc.setDrawColor(brandColor.r, brandColor.g, brandColor.b);
-        doc.rect(15, yPos, pageWidth - 30, 60);
-        doc.setFontSize(10);
-        doc.setTextColor(brandColor.r, brandColor.g, brandColor.b);
-        doc.text("[Gráfico de progreso - Activar Gemini Charts en configuración]", pageWidth / 2, yPos + 30, { align: "center" });
-      }
-      yPos += 70;
+        });
 
-      // Texto después del gráfico
-      doc.setFontSize(11);
-      doc.setTextColor(60, 60, 60);
-      doc.text("Como se observa en el gráfico, el aprendiente ha mostrado mejora constante.", 15, yPos);
+        return currentY;
+      };
 
-      // Footer de página 2
-      doc.setDrawColor(brandColor.r, brandColor.g, brandColor.b);
-      doc.line(15, pageHeight - 25, pageWidth - 15, pageHeight - 25);
-      doc.setFontSize(8);
-      doc.setTextColor(100, 100, 100);
-      doc.text("Evaluador: Sistema Educativo", 15, pageHeight - 15);
-      doc.text("www.sistemaeducativo.com", pageWidth - 15, pageHeight - 15, { align: "right" });
-      doc.text("Página 2", pageWidth / 2, pageHeight - 10, { align: "center" });
+      // ===== SECCIONES DINÁMICAS =====
+      const templateP2 = getReportTypeTemplate(settings.report_type);
+      const sectionOrderP2 = settings.section_order || templateP2?.defaultConfig.section_order || [];
+      let currentPageP2 = 2;
 
-      // ===== PÁGINA 3: COMPETENCIAS Y RECOMENDACIONES =====
-      doc.addPage();
-      doc.setFillColor(255, 255, 255);
-      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+      for (const sectionId of sectionOrderP2) {
+        const section = templateP2?.custom_sections.find(s => s.id === sectionId);
+        let sectionContent = (settings as any)[`content_${sectionId}_text`] || "";
+        const isEnabled = (settings as any)[`content_show_${sectionId}`] !== false;
 
-      // Header con logo pequeño
-      yPos = 15;
-      if (settings.logo_urls.length > 0) {
-        try {
-          const img = await loadImage(settings.logo_urls[0]);
-          doc.addImage(img, 'PNG', 15, yPos, 30, 18);
-        } catch (error) {
-          console.error("Error loading header logo:", error);
-        }
-      }
+        if (!section || !isEnabled) continue;
 
-      doc.setDrawColor(brandColor.r, brandColor.g, brandColor.b);
-      doc.setLineWidth(0.5);
-      doc.line(15, yPos + 22, pageWidth - 15, yPos + 22);
-      yPos += 35;
+        // Start each new section on a fresh page
+        doc.addPage();
+        addPageDecorations(currentPageP2);
+        currentPageP2++;
 
-      // SECCIÓN: DISTRIBUCIÓN DE COMPETENCIAS
-      doc.setFontSize(16);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(brandColor.r, brandColor.g, brandColor.b);
-      doc.text("DISTRIBUCIÓN DE COMPETENCIAS", 15, yPos);
-      yPos += 10;
+        let yPosSect = 45;
 
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(60, 60, 60);
-      const compText = "La evaluación de competencias muestra el nivel de desarrollo en diferentes áreas clave. El siguiente gráfico presenta la distribución por categoría.";
-      const splitComp = doc.splitTextToSize(compText, pageWidth - 30);
-      doc.text(splitComp, 15, yPos);
-      yPos += splitComp.length * 6 + 10;
-
-      // Generar gráfico de distribución con Gemini API
-      // DISABLED: Edge Function has persistent 500 errors
-      if (false && settings.use_gemini_charts) {
-        const distributionChartData = {
-          labels: ['Coordinación', 'Precisión', 'Visual-Motor', 'Fuerza'],
-          values: [85, 78, 92, 73],
-          type: 'bar',
-          colors: [settings.primary_color, '#FFA726', '#66BB6A', '#5C6BC0']
-        };
-
-        const distributionChartPrompt = `Genera un gráfico de barras horizontal profesional que muestre la distribución de competencias del aprendiente.
-        Datos: ${JSON.stringify(distributionChartData)}
-        El gráfico debe tener:
-        - Eje Y con las categorías: Coordinación, Precisión, Visual-Motor, Fuerza
-        - Eje X con valores de 0 a 100 (nivel de competencia)
-        - Barras horizontales con los colores especificados
-        - Valores numéricos al final de cada barra
-        - Fondo blanco limpio
-        - Título: "Distribución de Competencias"
-        - Etiquetas claras y legibles
-        - Tamaño: 800x500 píxeles`;
-
-        const chartImage = await generateChartWithGemini(distributionChartPrompt, distributionChartData);
-
-        if (chartImage) {
-          try {
-            doc.addImage(chartImage, 'PNG', 15, yPos, pageWidth - 30, 70);
-          } catch (error) {
-            console.error('Error adding distribution chart:', error);
-            // Fallback al placeholder
-            doc.setFillColor(brandColor.r, brandColor.g, brandColor.b, 0.1);
-            doc.rect(15, yPos, pageWidth - 30, 70, 'F');
-            doc.setDrawColor(brandColor.r, brandColor.g, brandColor.b);
-            doc.rect(15, yPos, pageWidth - 30, 70);
-            doc.setFontSize(10);
-            doc.setTextColor(brandColor.r, brandColor.g, brandColor.b);
-            doc.text("[Error al cargar gráfico]", pageWidth / 2, yPos + 35, { align: "center" });
-          }
-        } else {
-          doc.setFillColor(brandColor.r, brandColor.g, brandColor.b, 0.1);
-          doc.rect(15, yPos, pageWidth - 30, 70, 'F');
-          doc.setDrawColor(brandColor.r, brandColor.g, brandColor.b);
-          doc.rect(15, yPos, pageWidth - 30, 70);
-          doc.setFontSize(10);
-          doc.setTextColor(brandColor.r, brandColor.g, brandColor.b);
-          doc.text("[Gráfico de distribución - Activar Gemini Charts]", pageWidth / 2, yPos + 35, { align: "center" });
-        }
-      } else {
-        // Placeholder cuando Gemini Charts está desactivado
-        doc.setFillColor(brandColor.r, brandColor.g, brandColor.b, 0.1);
-        doc.rect(15, yPos, pageWidth - 30, 70, 'F');
-        doc.setDrawColor(brandColor.r, brandColor.g, brandColor.b);
-        doc.rect(15, yPos, pageWidth - 30, 70);
-        doc.setFontSize(10);
-        doc.setTextColor(brandColor.r, brandColor.g, brandColor.b);
-        doc.text("[Gráfico de distribución - Activar Gemini Charts en configuración]", pageWidth / 2, yPos + 35, { align: "center" });
-      }
-      yPos += 80;
-
-      // SECCIÓN: RECOMENDACIONES
-      doc.setFontSize(16);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(brandColor.r, brandColor.g, brandColor.b);
-      doc.text("RECOMENDACIONES", 15, yPos);
-      yPos += 10;
-
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(60, 60, 60);
-
-      const recomendaciones = [
-        "Reforzar actividades de coordinación ojo-mano mediante ejercicios prácticos.",
-        "Continuar con el desarrollo de precisión motriz a través de actividades dirigidas.",
-        "Implementar ejercicios que promuevan la integración de habilidades adquiridas."
-      ];
-
-      recomendaciones.forEach((rec, index) => {
-        doc.setFillColor(brandColor.r, brandColor.g, brandColor.b, 0.1);
-        const textHeight = doc.splitTextToSize(`${index + 1}. ${rec}`, pageWidth - 40).length * 6;
-        doc.rect(15, yPos - 3, pageWidth - 30, textHeight + 4, 'F');
-
+        // Section Title
+        doc.setFontSize(22);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(brandColor.r, brandColor.g, brandColor.b);
-        doc.text(`${index + 1}.`, 20, yPos);
+        doc.text(section.title.toUpperCase(), 15, yPosSect);
+        yPosSect += 15;
 
+        // Section content with auto page breaking
+        doc.setFontSize(11);
         doc.setFont("helvetica", "normal");
-        doc.setTextColor(60, 60, 60);
-        const split = doc.splitTextToSize(rec, pageWidth - 45);
-        doc.text(split, 30, yPos);
+        doc.setTextColor(40, 40, 40);
 
-        yPos += textHeight + 8;
-      });
+        if (sectionContent) {
+          // Normalize line breaks and clean special chars
+          sectionContent = sectionContent.replace(/[\u0000-\u0008\u000B-\u000C\u000E-\u001F\u007F-\u009F]/g, "");
 
-      // Footer de página 3
-      doc.setDrawColor(brandColor.r, brandColor.g, brandColor.b);
-      doc.line(15, pageHeight - 25, pageWidth - 15, pageHeight - 25);
-      doc.setFontSize(8);
-      doc.setTextColor(100, 100, 100);
-      doc.text("Evaluador: Sistema Educativo", 15, pageHeight - 15);
-      doc.text("www.sistemaeducativo.com", pageWidth - 15, pageHeight - 15, { align: "right" });
-      doc.text("Página 3", pageWidth / 2, pageHeight - 10, { align: "center" });
+          const lines = doc.splitTextToSize(sectionContent, pageWidth - 30);
+          for (const line of lines) {
+            // Check if we need a new page BEFORE writing
+            if (yPosSect > pageHeight - 30) {
+              doc.addPage();
+              addPageDecorations(currentPageP2);
+              currentPageP2++;
+              yPosSect = 45;
+              // Reset font state on new page
+              doc.setFont("helvetica", "normal");
+              doc.setFontSize(11);
+              doc.setTextColor(40, 40, 40);
+            }
 
-      // ===== PÁGINA 4: CONCLUSIONES =====
-      doc.addPage();
-      doc.setFillColor(255, 255, 255);
-      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+            // Simple Bold Parser per line 
+            if (line.includes('**')) {
+              const parts = line.split(/(\*\*.*?\*\*)/g);
+              let localX = 15;
+              parts.forEach(part => {
+                if (part.startsWith('**') && part.endsWith('**')) {
+                  doc.setFont("helvetica", "bold");
+                  const cleanPart = part.slice(2, -2);
+                  doc.text(cleanPart, localX, yPosSect);
+                  localX += doc.getTextWidth(cleanPart);
+                } else {
+                  doc.setFont("helvetica", "normal");
+                  doc.text(part, localX, yPosSect);
+                  localX += doc.getTextWidth(part);
+                }
+              });
+            } else {
+              doc.setFont("helvetica", "normal");
+              doc.text(line, 15, yPosSect);
+            }
 
-      // Header con logo
-      yPos = 15;
-      if (settings.logo_urls.length > 0) {
-        try {
-          const img = await loadImage(settings.logo_urls[0]);
-          doc.addImage(img, 'PNG', 15, yPos, 30, 18);
-        } catch (error) {
-          console.error("Error loading header logo:", error);
+            yPosSect += 7;
+          }
+          yPosSect += 5; // Extra padding after text
         }
-      }
 
-      doc.setDrawColor(brandColor.r, brandColor.g, brandColor.b);
-      doc.setLineWidth(0.5);
-      doc.line(15, yPos + 22, pageWidth - 15, yPos + 22);
-      yPos += 35;
-
-      // SECCIÓN: CONCLUSIONES
-      doc.setFontSize(16);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(brandColor.r, brandColor.g, brandColor.b);
-      doc.text("CONCLUSIONES", 15, yPos);
-      yPos += 10;
-
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(60, 60, 60);
-      const conclusionText = "El aprendiente ha demostrado un desarrollo positivo en las áreas evaluadas. Los resultados indican que el proceso de aprendizaje está siendo efectivo y que las estrategias implementadas están generando los resultados esperados. Se recomienda continuar con el plan de desarrollo establecido, monitoreando el progreso de forma regular para asegurar la consolidación de las habilidades adquiridas.";
-      const splitConc = doc.splitTextToSize(conclusionText, pageWidth - 30);
-      doc.text(splitConc, 15, yPos);
-      yPos += splitConc.length * 6 + 20;
-
-      // Firma y fecha
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "bold");
-      doc.text("Fecha del reporte:", 15, yPos);
-      doc.setFont("helvetica", "normal");
-      doc.text(new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }), 60, yPos);
-      yPos += 10;
-
-      doc.setFont("helvetica", "bold");
-      doc.text("Generado por:", 15, yPos);
-      doc.setFont("helvetica", "normal");
-      doc.text("Sistema de Evaluación Educativa", 60, yPos);
-
-      // Footer logos múltiples (si existen)
-      if (settings.footer_logo_urls && settings.footer_logo_urls.length > 0) {
-        const footerLogoSize = 20;
-        const footerSpacing = 10;
-        const totalFooterWidth = settings.footer_logo_urls.length * footerLogoSize + (settings.footer_logo_urls.length - 1) * footerSpacing;
-        let footerXPos = (pageWidth - totalFooterWidth) / 2;
-        const footerYPos = pageHeight - 50;
-
-        for (const logoUrl of settings.footer_logo_urls) {
-          try {
-            const img = await loadImage(logoUrl);
-            doc.addImage(img, 'PNG', footerXPos, footerYPos, footerLogoSize, footerLogoSize * 0.6);
-            footerXPos += footerLogoSize + footerSpacing;
-          } catch (error) {
-            console.error("Error loading footer logo:", error);
+        // Handle Chart generation
+        const chartSects = ['resultados', 'perfil_estilos', 'modalidades', 'analisis_integral', 'proyecciones', 'analisis_habitos', 'prediccion_avanzada'];
+        if (chartSects.includes(sectionId) && settings.use_gemini_charts) {
+          const cData = { title: section.title, labels: ['A', 'B', 'C'], values: [85, 70, 95], type: 'bar' };
+          const cPrompt = `Gráfico de ${section.title}. Color: ${settings.primary_color}`;
+          const cImage = await generateChartWithAI(cPrompt, cData);
+          if (cImage) {
+            try {
+              // Ensure chart fits or wrap to new page
+              if (yPosSect + 85 > pageHeight - 30) {
+                doc.addPage();
+                addPageDecorations(currentPageP2);
+                currentPageP2++;
+                yPosSect = 45;
+              }
+              doc.addImage(cImage, 'PNG', 15, yPosSect, pageWidth - 30, 75);
+              yPosSect += 85;
+            } catch (e) {
+              console.error("Error adding chart image:", e);
+            }
           }
         }
       }
-
-      // Footer de página 4
-      doc.setDrawColor(brandColor.r, brandColor.g, brandColor.b);
-      doc.line(15, pageHeight - 25, pageWidth - 15, pageHeight - 25);
-      doc.setFontSize(8);
-      doc.setTextColor(100, 100, 100);
-      doc.text(settings.footer_text, 15, pageHeight - 15);
-      doc.text("www.sistemaeducativo.com", pageWidth - 15, pageHeight - 15, { align: "right" });
-      doc.text("Página 4", pageWidth / 2, pageHeight - 10, { align: "center" });
-
-      const pdfBlob = doc.output('blob');
-      const pdfUrl = URL.createObjectURL(pdfBlob);
-
-      if (pdfPreview) {
-        URL.revokeObjectURL(pdfPreview);
-      }
-
-      setPdfPreview(pdfUrl);
+      const pBlob = doc.output('blob');
+      const pUrl = URL.createObjectURL(pBlob);
+      if (pdfPreview) URL.revokeObjectURL(pdfPreview);
+      setPdfPreview(pUrl);
     } catch (error) {
       console.error("Error generating preview:", error);
     }
@@ -1023,11 +918,15 @@ const ReportSettings: React.FC = () => {
             <Button
               onClick={handleSave}
               disabled={saving}
-              className="bg-primary hover:bg-primary/90 transition-all gap-2"
+              className={`transition-all gap-2 relative ${hasUnsavedChanges ? 'bg-amber-600 hover:bg-amber-700' : 'bg-primary hover:bg-primary/90'}`}
               data-tutorial="save-settings-btn"
+              title={hasUnsavedChanges ? "Tienes cambios sin guardar" : "Sin cambios pendientes"}
             >
+              {hasUnsavedChanges && (
+                <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full animate-pulse" />
+              )}
               <Save className="h-4 w-4" />
-              <span className="hidden sm:inline">{saving ? "Guardando..." : "Guardar Cambios"}</span>
+              <span className="hidden sm:inline">{saving ? "Guardando..." : hasUnsavedChanges ? "¡Guardar Cambios!" : "Guardado"}</span>
             </Button>
           </div>
         </MotionDiv>
@@ -1051,6 +950,10 @@ const ReportSettings: React.FC = () => {
                 <h2 className="text-lg font-semibold">Configuración</h2>
               </div>
 
+
+              {/* AI Debugger - MOVED TO PROFILE (Admin Only) */}
+              {/* <OpenRouterConfig /> */}
+
               {/* Template Selection */}
               <div className="space-y-3" data-tutorial="template-selector">
                 <Label className="text-xs uppercase tracking-wider text-muted-foreground">
@@ -1064,8 +967,10 @@ const ReportSettings: React.FC = () => {
                       : 'border-border hover:border-primary/50'
                       }`}
                   >
-                    <div className="w-full h-16 bg-muted rounded mb-2" />
-                    <p className="text-xs font-medium text-center">Classic</p>
+                    <div className="w-full h-16 bg-muted rounded mb-2 flex items-center justify-center">
+                      <FileText className="w-8 h-8 text-muted-foreground/30" />
+                    </div>
+                    <p className="text-xs font-bold text-center">Clásica (Estándar)</p>
                   </button>
                   <button
                     onClick={() => setSettings({ ...settings, template: 'modern' })}
@@ -1074,8 +979,10 @@ const ReportSettings: React.FC = () => {
                       : 'border-border hover:border-primary/50'
                       }`}
                   >
-                    <div className="w-full h-16 bg-foreground rounded mb-2" />
-                    <p className="text-xs font-medium text-center">Modern</p>
+                    <div className="w-full h-16 bg-primary/20 rounded mb-2 flex items-center justify-center">
+                      <Brain className="w-8 h-8 text-primary/40" />
+                    </div>
+                    <p className="text-xs font-bold text-center">Moderna (Integración IA)</p>
                   </button>
                   <button
                     onClick={() => setSettings({ ...settings, template: 'minimal' })}
@@ -1084,8 +991,10 @@ const ReportSettings: React.FC = () => {
                       : 'border-border hover:border-primary/50'
                       }`}
                   >
-                    <div className="w-full h-16 border-2 border-muted rounded mb-2" />
-                    <p className="text-xs font-medium text-center">Minimal</p>
+                    <div className="w-full h-16 border-2 border-dashed border-muted rounded mb-2 flex items-center justify-center">
+                      <Laptop className="w-8 h-8 text-muted-foreground/20" />
+                    </div>
+                    <p className="text-xs font-bold text-center">Minimalista</p>
                   </button>
                 </div>
               </div>
@@ -1187,7 +1096,7 @@ const ReportSettings: React.FC = () => {
                     <div>
                       <Label className="text-sm font-medium">Gráficos con IA</Label>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Generar gráficos profesionales usando Gemini API
+                        Generar gráficos usando el proveedor de IA activo en tu perfil
                       </p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -1264,26 +1173,49 @@ const ReportSettings: React.FC = () => {
                   <h3 className="font-medium">Contenido del Reporte</h3>
                 </div>
 
-                {/* Report Type Info */}
-                <div className="space-y-3">
+                {/* Report Type Selector */}
+                <div className="space-y-3" data-tutorial="report-type-selector">
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-                    TIPO DE REPORTE ACTUAL
+                    TIPO DE REPORTE
                   </Label>
-                  <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
-                    <div className="flex items-start gap-3">
-                      <span className="text-3xl">{getReportTypeTemplate(settings.report_type)?.icon}</span>
-                      <div className="flex-1">
-                        <p className="font-semibold text-sm mb-1">
-                          {getReportTypeTemplate(settings.report_type)?.name}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {getReportTypeTemplate(settings.report_type)?.description}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                  <Select
+                    value={settings.report_type}
+                    onValueChange={(value: ReportType) => {
+                      const template = getReportTypeTemplate(value);
+                      if (template) {
+                        // Confirm with user if they want to overwrite current content with defaults?
+                        // For now, let's just update the type and let the useEffect handle defaults
+                        // but we might want to be more explicit.
+                        setSettings({
+                          ...settings,
+                          report_type: value,
+                          // Overwrite with defaults for the new type?
+                          // Yes, usually when switching "Type" you want the new structure
+                          ...template.defaultConfig
+                        });
+                        toast({
+                          title: "Tipo de reporte cambiado",
+                          description: `Se ha aplicado la configuración para ${template.name}`,
+                        });
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Selecciona un tipo de reporte" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {reportTypeTemplates.map((t) => (
+                        <SelectItem key={t.id} value={t.id}>
+                          <div className="flex items-center gap-2">
+                            <span>{t.icon}</span>
+                            <span>{t.name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <p className="text-xs text-muted-foreground">
-                    💡 Cambia el tipo de reporte en el selector superior para aplicar configuraciones predefinidas
+                    💡 Al cambiar el tipo de reporte, se aplicarán las secciones y contenidos predefinidos.
                   </p>
                 </div>
 
@@ -1327,10 +1259,26 @@ const ReportSettings: React.FC = () => {
                   if (!template || !template.custom_sections) return null;
 
                   return template.custom_sections.map((section) => (
-                    <div key={section.id} className="space-y-2">
-                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-                        {section.title}
-                      </Label>
+                    <div key={section.id} className="space-y-2 border-t pt-4 first:border-t-0 first:pt-0">
+                      <div className="flex items-center justify-between mb-2">
+                        <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                          {section.title}
+                        </Label>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs gap-1.5 hover:text-primary hover:bg-primary/10 transition-all"
+                          disabled={isRefining[section.id]}
+                          onClick={() => handleRefineText(section.id, (settings as any)[`content_${section.id}_text`] || '')}
+                        >
+                          {isRefining[section.id] ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Wand2 className="h-3 w-3" />
+                          )}
+                          Refinar con IA
+                        </Button>
+                      </div>
                       {section.description && (
                         <p className="text-xs text-muted-foreground mb-1">
                           {section.description}
@@ -1378,7 +1326,7 @@ const ReportSettings: React.FC = () => {
       </main>
 
       <TutorialButton onClick={() => startTutorial(reportSettingsTutorial)} />
-    </div>
+    </div >
   );
 };
 

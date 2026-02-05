@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Download, Sparkles, Lightbulb, TrendingUp, Plus, ChevronDown } from "lucide-react";
+import { Wand2, Plus, RefreshCw, Trash2, CheckCircle, Loader2, ArrowLeft, ChevronDown, Download, Sparkles, BrainCircuit, TrendingUp, Lightbulb } from "lucide-react";
 import { User, Session } from "@supabase/supabase-js";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -55,16 +55,7 @@ interface AISuggestions {
   weeklyPlan?: { day: string; activity: string; duration: string }[];
 }
 
-const ACTIVITIES = [
-  "Juego de Pesca",
-  "Pesca con imán",
-  "Ensartado",
-  "Enroscar botellas",
-  "Laberintos con crayón",
-  "Laberintos con dáctilo pintura",
-  "Juego de lanzamiento con muñecas",
-  "Juego del candado"
-];
+const MotionDiv = motion.div;
 
 const STANDARD_ACTIVITY_NAMES = [
   "Juego de Pesca",
@@ -77,6 +68,32 @@ const STANDARD_ACTIVITY_NAMES = [
   "Juego del candado"
 ];
 
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+
+const itemVariants: Variants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: { y: 0, opacity: 1 }
+};
+
+const ACTIVITIES = [
+  "Juego de Pesca",
+  "Pesca con imán",
+  "Ensartado",
+  "Enroscar botellas",
+  "Laberintos con crayón",
+  "Laberintos con dáctilo pintura",
+  "Juego de lanzamiento con muñecas",
+  "Juego del candado"
+];
 
 const Reports = () => {
   const navigate = useNavigate();
@@ -98,6 +115,9 @@ const Reports = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [schools, setSchools] = useState<string[]>([]);
   const [schoolFilter, setSchoolFilter] = useState<string>("all");
+  const [isRefiningSummary, setIsRefiningSummary] = useState(false);
+  const [isRefiningPrediction, setIsRefiningPrediction] = useState(false);
+  const [useAICharts, setUseAICharts] = useState(false);
 
   useEffect(() => {
     const completedTutorials = JSON.parse(localStorage.getItem('completedTutorials') || '[]');
@@ -133,6 +153,7 @@ const Reports = () => {
       checkAdminRole();
       fetchSchools();
       fetchChildren();
+      fetchReportSettings();
     }
   }, [user]);
 
@@ -151,19 +172,52 @@ const Reports = () => {
   }, [selectedChild]);
 
   const checkAdminRole = async () => {
-    if (!user?.id) return;
+    if (!user) return;
 
+    const { data: roleData } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .single();
+
+    setIsAdmin(!!roleData);
+  };
+
+  const fetchReportSettings = async () => {
     try {
-      const { data, error } = await supabase.rpc('has_role', {
-        _user_id: user.id,
-        _role: 'admin'
+      const { data, error } = await supabase
+        .from('report_settings')
+        .select('use_gemini_charts')
+        .single();
+
+      if (!error && data) {
+        setUseAICharts(data.use_gemini_charts ?? false);
+      }
+    } catch (err) {
+      console.error('Error fetching report settings:', err);
+    }
+  };
+
+  const generateChartWithAI = async (prompt: string, chartData: any): Promise<string | null> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-chart-image', {
+        body: { prompt, chartData }
       });
 
-      if (error) throw error;
-      setIsAdmin(data || false);
+      if (error) {
+        console.error('Error generating chart with AI:', error);
+        return null;
+      }
+
+      if (data?.imageBase64) {
+        return `data:${data.mimeType || 'image/png'};base64,${data.imageBase64}`;
+      }
+
+      return null;
     } catch (error) {
-      console.error("Error checking admin role:", error);
-      setIsAdmin(false);
+      console.error('Error calling AI chart API:', error);
+      return null;
     }
   };
 
@@ -304,6 +358,8 @@ const Reports = () => {
     return { stats, overallAvg };
   };
 
+
+
   const generateAISuggestions = async () => {
     if (evaluations.length === 0) return;
 
@@ -352,15 +408,17 @@ const Reports = () => {
 
     const childName = children.find(c => c.id === selectedChild)?.name || "Aprendiente";
 
+    // LÓGICA ORIGINAL RESTAURADA + ENRIQUECIMIENTO HÍBRIDO
     const useLocalEngine = async () => {
-      console.log('Usando motor de IA local para sugerencias...');
+      console.log('Generando sugerencias con Motor Local (Prioridad)...');
 
+      // 1. Obtener contexto entrenado (RAG)
       const { data: trainedModel } = await supabase
         .from('ai_training_models')
         .select('*')
         .order('trained_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       const { data: learningStyle } = await supabase
         .from('learning_style_assessments')
@@ -370,6 +428,7 @@ const Reports = () => {
         .limit(1)
         .maybeSingle();
 
+      // 2. Generar sugerencias base (Rapidez y robustez)
       const localSuggestions = generateLocalSuggestions(
         evaluations,
         trainedModel,
@@ -378,81 +437,192 @@ const Reports = () => {
       );
       setAiSuggestions(localSuggestions);
 
-      if (evaluations && evaluations.length > 0) {
-        const latestEval = evaluations[evaluations.length - 1];
-
-        if (localSuggestions.suggestions && Array.isArray(localSuggestions.suggestions)) {
-          const activitiesToSave = localSuggestions.suggestions.flatMap((suggestion: any) => {
-            if (suggestion.concreteActivities && Array.isArray(suggestion.concreteActivities)) {
-              return suggestion.concreteActivities.map((concrete: any) => {
-                const durationMatch = concrete.duration?.match(/\d+/);
-                const durationMinutes = durationMatch ? parseInt(durationMatch[0]) : 15;
-
-                return {
-                  child_id: selectedChild,
-                  activity_name: concrete.name || suggestion.activity || 'Actividad',
-                  activity_type: suggestion.type || 'General',
-                  description: (concrete.steps && Array.isArray(concrete.steps))
-                    ? concrete.steps.join('. ')
-                    : (suggestion.description || 'Actividad personalizada'),
-                  difficulty_level: 'intermediate',
-                  materials_needed: (concrete.materials && Array.isArray(concrete.materials))
-                    ? concrete.materials
-                    : [],
-                  duration_minutes: durationMinutes,
-                  repetitions_recommended: 3,
-                  success_criteria: suggestion.expectedProgress || 'Completar actividad',
-                  progression_notes: `Generado localmente para ${childName}`,
-                  ai_confidence: localSuggestions.modelConfidence || 0.85,
-                  is_active: true
-                };
-              });
-            }
-            return [];
-          });
-
-          if (activitiesToSave.length > 0) {
-            const { error: insertError } = await supabase
-              .from('personalized_activities')
-              .insert(activitiesToSave);
-
-            if (insertError) {
-              console.error('Error saving activities:', insertError);
-            }
-          }
-        }
-
-        await supabase.from('ai_results').insert({
-          evaluation_id: latestEval.id,
-          recommendations: localSuggestions.overallRecommendation || "Sugerencias generadas localmente",
-          confidence_score: localSuggestions.modelConfidence || 0.85,
-          classification: 'medio'
-        });
-      }
-
       await fetchPersonalizedActivities();
       await fetchCompetencyIndex();
 
       toast({
-        title: "Motor de Sugerencias Local",
-        description: "Sugerencias generadas con el modelo entrenado localmente"
+        title: "Sugerencias Generadas",
+        description: "Basadas en tu Modelo Local Entrenado (RAG)."
       });
     };
 
     try {
       await useLocalEngine();
-      toast({
-        title: "Sugerencias Generadas",
-        description: "Actividades personalizadas creadas con el modelo entrenado"
-      });
-    } catch (localError) {
+    } catch (localError: any) {
+      console.error("Error en motor local:", localError);
       toast({
         title: "Error",
-        description: "No se pudieron generar sugerencias",
+        description: "No se pudieron generar sugerencias.",
         variant: "destructive"
       });
     } finally {
       setLoadingSuggestions(false);
+    }
+  };
+
+  const handleCreateAIActivity = async () => {
+    setLoadingSuggestions(true);
+    try {
+      const childName = children.find(c => c.id === selectedChild)?.name || "Aprendiente";
+      const existingActivityNames = personalizedActivities.map(a => a.activity_name);
+
+      console.log("Solicitando N nuevas actividades creativas a la IA...");
+      const { data, error } = await supabase.functions.invoke('generate-suggestions', {
+        body: {
+          evaluations: evaluations,
+          childName: childName,
+          childId: selectedChild,
+          existingActivities: existingActivityNames
+        }
+      });
+
+      if (error) throw error;
+
+      if (data && data.personalizedActivities) {
+        // Transformar para que el UI de previsualización lo entienda
+        const transformedSuggestions: Suggestion[] = data.personalizedActivities.map((pa: any) => ({
+          activity: pa.activityName,
+          type: pa.activityType,
+          description: pa.description,
+          benefits: pa.targetSkills || [],
+          expectedProgress: pa.successCriteria || pa.progressionNotes,
+          concreteActivities: [{
+            name: pa.activityName,
+            duration: `${pa.durationMinutes} min`,
+            materials: pa.materialsNeeded || [],
+            steps: pa.progressionNotes ? pa.progressionNotes.split('. ') : [pa.description]
+          }]
+        }));
+
+        setAiSuggestions({
+          suggestions: transformedSuggestions,
+          overallRecommendation: "Sugerencias creativas generadas por IA avanzada (Edge Function).",
+          weeklyPlan: []
+        });
+
+        toast({
+          title: "¡Actividades Creativas Generadas!",
+          description: `Se han diseñado ${data.personalizedActivities.length} nuevas propuestas. Revísalas abajo.`
+        });
+      }
+
+    } catch (e: any) {
+      console.error(e);
+      toast({ title: "Error conectando con IA", description: e.message, variant: "destructive" });
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
+  const handleRefineSummary = async () => {
+    if (!aiSuggestions?.overallRecommendation || aiSuggestions.overallRecommendation.trim().length < 10) {
+      toast({
+        title: "Contenido insuficiente",
+        description: "Primero genera sugerencias para poder refinarlas.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsRefiningSummary(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('refine-report-text', {
+        body: {
+          text: aiSuggestions.overallRecommendation,
+          sectionTitle: 'Resumen General',
+          reportType: 'prediccion'
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.refinedText) {
+        setAiSuggestions((prev: any) => prev ? ({
+          ...prev,
+          overallRecommendation: data.refinedText
+        }) : null);
+        toast({
+          title: "Resumen Optimizado",
+          description: "La IA ha refinado la recomendación general.",
+        });
+      }
+    } catch (error: any) {
+      console.error('Error refining summary:', error);
+      toast({
+        title: "Error al optimizar",
+        description: error.message || "No se pudo conectar con el servicio de IA.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsRefiningSummary(false);
+    }
+  };
+
+  const handleRefinePrediction = async () => {
+    if (!progressPredictions?.recommendations?.priority || progressPredictions.recommendations.priority.trim().length < 10) {
+      toast({
+        title: "Contenido insuficiente",
+        description: "Primero genera predicciones para poder refinarlas.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const child = children.find(c => c.id === selectedChild);
+    const childName = child?.name || "Aprendiente";
+
+    const predictionContext = `
+      Aprendiente: ${childName}
+      Promedio Actual: ${progressPredictions.overallProgress.currentAverage.toFixed(2)}
+      Tendencia: ${progressPredictions.overallProgress.trend}
+      
+      Factores de Riesgo:
+      ${progressPredictions.riskFactors.join('\n')}
+      
+      Oportunidades de Mejora:
+      ${progressPredictions.opportunities.join('\n')}
+      
+      Actividades Personalizadas Activas:
+      ${progressPredictions.contextForAI?.activeCustomActivities?.join(', ') || 'Ninguna'}
+      
+      Recomendación Base:
+      ${progressPredictions.recommendations.priority}
+    `;
+
+    setIsRefiningPrediction(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('refine-report-text', {
+        body: {
+          text: predictionContext,
+          sectionTitle: 'Análisis Estratégico de Progreso',
+          reportType: 'prediccion_avanzada'
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.refinedText) {
+        setProgressPredictions(prev => prev ? ({
+          ...prev,
+          recommendations: {
+            ...prev.recommendations,
+            priority: data.refinedText
+          }
+        }) : null);
+        toast({
+          title: "Predicciones Optimizadas",
+          description: "La IA ha refinado las recomendaciones estratégicas.",
+        });
+      }
+    } catch (error: any) {
+      console.error('Error refining prediction:', error);
+      toast({
+        title: "Error al optimizar",
+        description: error.message || "No se pudo conectar con el servicio de IA.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsRefiningPrediction(false);
     }
   };
 
@@ -517,10 +687,15 @@ const Reports = () => {
         .select('*')
         .order('trained_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      const localPredictions = generateLocalPredictions(evaluations, trainedModel, childName);
-      setProgressPredictions(localPredictions);
+      const predictions = generateLocalPredictions(
+        evaluations,
+        trainedModel,
+        childName,
+        personalizedActivities // Pasamos las actividades personalizadas
+      );
+      setProgressPredictions(predictions);
 
       toast({
         title: "Predicciones Locales",
@@ -724,27 +899,7 @@ const Reports = () => {
     }
   };
 
-  const containerVariants: Variants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.1
-      }
-    }
-  };
 
-  const itemVariants: Variants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: { type: "spring", stiffness: 300, damping: 24 }
-    }
-  };
-
-  const MotionDiv = motion.div;
 
   const exportToCSV = () => {
     if (evaluations.length === 0) return;
@@ -1113,7 +1268,21 @@ const Reports = () => {
                       <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
                         <p className="font-semibold mb-2">Recomendación General del Sistema:</p>
                         <p className="text-sm">{aiSuggestions.overallRecommendation}</p>
-                        <div className="mt-2 flex justify-end">
+                        <div className="mt-2 flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 text-xs gap-1.5 hover:text-primary hover:bg-primary/10 transition-all border border-primary/20"
+                            disabled={isRefiningSummary}
+                            onClick={handleRefineSummary}
+                          >
+                            {isRefiningSummary ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Wand2 className="h-3 w-3" />
+                            )}
+                            Refinar con IA
+                          </Button>
                           <Button onClick={exportSuggestionsToPDF} variant="outline" size="sm">
                             <Download className="mr-2 h-4 w-4" />
                             Descargar PDF Sugerencias
@@ -1146,7 +1315,11 @@ const Reports = () => {
                     Descargar PDF Predicciones
                   </Button>
                 </div>
-                <ProgressPrediction predictions={progressPredictions} />
+                <ProgressPrediction
+                  predictions={progressPredictions}
+                  onRefine={handleRefinePrediction}
+                  isRefining={isRefiningPrediction}
+                />
               </MotionDiv>
             )}
 

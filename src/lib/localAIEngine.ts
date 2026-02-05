@@ -24,6 +24,7 @@ interface TrainedModel {
   f1_medium: number | null;
   f1_low: number | null;
   confusion_matrix: any;
+  model_context?: string | null; // Ayuda externa generada por IA para mejorar la precisión local
 }
 
 const ACTIVITIES = [
@@ -103,7 +104,8 @@ function calculateConfidenceInterval(
 export function generateLocalPredictions(
   evaluations: Evaluation[],
   trainedModel: TrainedModel | null,
-  childName: string
+  childName: string,
+  personalizedActivities: any[] = []
 ): any {
   const modelAccuracy = trainedModel?.accuracy || 85;
   const modelConfidence = modelAccuracy / 100;
@@ -120,20 +122,13 @@ export function generateLocalPredictions(
   const currentAverage = historicalAverages[historicalAverages.length - 1] || 0;
   const { slope, trend } = calculateTrend(historicalAverages);
 
-  // Análisis específico para este aprendiente
-  const evaluationDates = evaluations.map(e => new Date(e.evaluation_date));
-  const daysBetweenFirst = evaluations.length > 1
-    ? Math.round((evaluationDates[evaluationDates.length - 1].getTime() - evaluationDates[0].getTime()) / (1000 * 60 * 60 * 24))
-    : 0;
-  const learningIntensity = daysBetweenFirst > 0 ? evaluations.length / (daysBetweenFirst / 30) : 1;
-
   // Predicciones temporales
   const oneMonthPredicted = predictFutureValue(currentAverage, slope, 1);
   const threeMonthsPredicted = predictFutureValue(currentAverage, slope, 3);
   const sixMonthsPredicted = predictFutureValue(currentAverage, slope, 6);
 
-  // Predicciones por actividad
-  const activityPredictions = ACTIVITIES.map((activity, idx) => {
+  // 1. Predicciones por actividad estándar
+  const standardPredictions = ACTIVITIES.map((activity, idx) => {
     const activityScores = evaluations
       .map(e => e[`test_${idx + 1}_score` as keyof Evaluation] as number | null)
       .filter((s): s is number => s !== null);
@@ -141,7 +136,6 @@ export function generateLocalPredictions(
     const currentScore = activityScores[activityScores.length - 1] || 0;
     const { slope: actSlope, trend: actTrend } = calculateTrend(activityScores);
 
-    // Calcular potencial de mejora
     let improvementPotential = 'bajo';
     if (currentScore < 3 && actSlope > 0) improvementPotential = 'alto';
     else if (currentScore < 4 && actSlope >= 0) improvementPotential = 'medio';
@@ -160,68 +154,76 @@ export function generateLocalPredictions(
     };
   });
 
+  // 2. Integrar Actividades Personalizadas con IA
+  const customPredictions = personalizedActivities.map(pa => {
+    // Estimamos el progreso basado en las notas de resultados si existen
+    const hasProgress = pa.results_notes && (
+      pa.results_notes.toLowerCase().includes('logrado') ||
+      pa.results_notes.toLowerCase().includes('mejor') ||
+      pa.results_notes.toLowerCase().includes('completado')
+    );
+
+    const activityTrend = hasProgress ? 'mejora moderada' : 'estable';
+    const estimatedScore = hasProgress ? 4.0 : 3.0; // Puntuación estimada base para personalizadas
+
+    return {
+      activity: `(IA) ${pa.activity_name}`,
+      currentScore: estimatedScore,
+      trend: activityTrend,
+      predictions: {
+        oneMonth: predictFutureValue(estimatedScore, hasProgress ? 0.2 : 0.1, 1),
+        threeMonths: predictFutureValue(estimatedScore, hasProgress ? 0.2 : 0.1, 3),
+        sixMonths: predictFutureValue(estimatedScore, hasProgress ? 0.15 : 0.1, 6)
+      },
+      improvementPotential: hasProgress ? 'medio' : 'alto',
+      confidence: (pa.ai_confidence || 0.85) * 0.9
+    };
+  });
+
+  const activityPredictions = [...standardPredictions, ...customPredictions];
+
   // Identificar factores de riesgo
   const riskFactors: string[] = [];
   const weakActivities = activityPredictions.filter(a => a.currentScore < 2.5);
   if (weakActivities.length > 0) {
-    riskFactors.push(`${weakActivities.length} actividades con puntuación por debajo del promedio esperado`);
+    riskFactors.push(`${weakActivities.length} actividades con puntuación baja`);
   }
-  if (slope < 0) {
-    riskFactors.push('Tendencia negativa detectada en el progreso general');
-  }
-  if (evaluations.length < 3) {
-    riskFactors.push('Datos históricos limitados para predicciones precisas');
-  }
-  const stagnantActivities = activityPredictions.filter(a => a.trend === 'estable' && a.currentScore < 4);
-  if (stagnantActivities.length > 2) {
-    riskFactors.push('Varias actividades muestran estancamiento');
+  if (slope < 0) riskFactors.push('Tendencia general negativa');
+
+  // Riesgos por actividades personalizadas estancadas
+  const stagnantCustom = personalizedActivities.filter(pa => !pa.results_notes && pa.is_active);
+  if (stagnantCustom.length > 2) {
+    riskFactors.push(`${stagnantCustom.length} actividades personalizadas sin registro de progreso`);
   }
 
   // Identificar oportunidades
   const opportunities: string[] = [];
-  const improvingActivities = activityPredictions.filter(a => a.trend.includes('mejora'));
-  if (improvingActivities.length > 0) {
-    opportunities.push(`${improvingActivities.length} actividades muestran tendencia positiva de mejora`);
+  if (activityPredictions.filter(a => a.trend.includes('mejora')).length > 0) {
+    opportunities.push('Varios indicadores muestran mejora progresiva');
   }
-  const highPotential = activityPredictions.filter(a => a.improvementPotential === 'alto');
-  if (highPotential.length > 0) {
-    opportunities.push(`${highPotential.length} actividades con alto potencial de desarrollo`);
-  }
-  if (slope > 0.2) {
-    opportunities.push('Velocidad de aprendizaje superior al promedio');
+  if (personalizedActivities.some(pa => pa.results_notes)) {
+    opportunities.push('Las actividades personalizadas están generando impacto positivo');
   }
 
-  // Generar recomendaciones personalizadas para este aprendiente
   const focusAreas = activityPredictions
     .filter(a => a.currentScore < 3.5 || a.improvementPotential === 'alto')
     .slice(0, 3)
     .map(a => a.activity);
 
-  // Recomendaciones personalizadas basadas en el perfil específico del aprendiente
-  let priority = `${childName} debe mantener el ritmo de práctica actual y consolidar las habilidades adquiridas.`;
-  let supportNeeded = 'bajo';
-
-  if (currentAverage < 2.5) {
-    priority = `${childName} necesita enfocar esfuerzos en las actividades básicas antes de avanzar a niveles más complejos. Se recomienda práctica diaria de 15-20 minutos.`;
-    supportNeeded = 'alto';
-  } else if (currentAverage < 3.5) {
-    priority = `${childName} debe reforzar las actividades con menor puntuación mediante práctica estructurada. Se sugieren sesiones de 3-4 veces por semana.`;
-    supportNeeded = 'medio';
+  let priority = `${childName} debe mantener el ritmo de práctica actual.`;
+  if (currentAverage < 3) {
+    priority = `${childName} requiere un enfoque intensivo en actividades de base y seguimiento cercano de las propuestas por IA.`;
   }
 
-  // Generar análisis personalizado según el historial del aprendiente
   const personalizedAnalysis = generatePersonalizedAnalysis(childName, evaluations, activityPredictions, slope, currentAverage);
 
   return {
-    childName, // Incluir nombre para referencias
+    childName,
     modelInfo: {
-      algorithm: 'Random Forest + Análisis Estadístico Local',
+      algorithm: 'Random Forest + IA Contextual',
       confidence: modelConfidence,
-      dataQuality: evaluations.length >= 5 ? 'bueno' : evaluations.length >= 3 ? 'limitado' : 'insuficiente',
-      predictiveAccuracy: `Basado en ${evaluations.length} evaluaciones históricas de ${childName}`,
-      evaluationPeriod: evaluations.length > 1
-        ? `${new Date(evaluations[0].evaluation_date).toLocaleDateString('es-ES')} - ${new Date(evaluations[evaluations.length - 1].evaluation_date).toLocaleDateString('es-ES')}`
-        : 'Evaluación única'
+      dataQuality: evaluations.length >= 3 ? 'bueno' : 'limitado',
+      predictiveAccuracy: `Análisis de ${evaluations.length} evaluaciones y ${personalizedActivities.length} actividades personalizadas.`
     },
     overallProgress: {
       currentLevel: classifyLevel(currentAverage),
@@ -230,38 +232,24 @@ export function generateLocalPredictions(
       learningVelocity: slope,
       personalizedMessage: personalizedAnalysis.overallMessage,
       predictions: {
-        oneMonth: {
-          expectedAverage: oneMonthPredicted,
-          confidenceInterval: calculateConfidenceInterval(oneMonthPredicted, 1, modelAccuracy),
-          likelihood: modelConfidence * 0.9,
-          description: `En 1 mes, ${childName} podría alcanzar un promedio de ${oneMonthPredicted.toFixed(2)}`
-        },
-        threeMonths: {
-          expectedAverage: threeMonthsPredicted,
-          confidenceInterval: calculateConfidenceInterval(threeMonthsPredicted, 3, modelAccuracy),
-          likelihood: modelConfidence * 0.8,
-          description: `En 3 meses, ${childName} podría alcanzar un promedio de ${threeMonthsPredicted.toFixed(2)}`
-        },
-        sixMonths: {
-          expectedAverage: sixMonthsPredicted,
-          confidenceInterval: calculateConfidenceInterval(sixMonthsPredicted, 6, modelAccuracy),
-          likelihood: modelConfidence * 0.7,
-          description: `En 6 meses, ${childName} podría alcanzar un promedio de ${sixMonthsPredicted.toFixed(2)}`
-        }
+        oneMonth: { expectedAverage: oneMonthPredicted, likelihood: modelConfidence * 0.9, confidenceInterval: calculateConfidenceInterval(oneMonthPredicted, 1, modelAccuracy) },
+        threeMonths: { expectedAverage: threeMonthsPredicted, likelihood: modelConfidence * 0.8, confidenceInterval: calculateConfidenceInterval(threeMonthsPredicted, 3, modelAccuracy) },
+        sixMonths: { expectedAverage: sixMonthsPredicted, likelihood: modelConfidence * 0.7, confidenceInterval: calculateConfidenceInterval(sixMonthsPredicted, 6, modelAccuracy) }
       }
     },
     activityPredictions,
-    riskFactors: riskFactors.length > 0
-      ? riskFactors.map(r => `${childName}: ${r}`)
-      : [`${childName} no presenta factores de riesgo significativos actualmente`],
-    opportunities: opportunities.length > 0
-      ? opportunities.map(o => `${childName}: ${o}`)
-      : [`${childName} puede continuar con el plan de desarrollo actual`],
+    riskFactors,
+    opportunities,
     recommendations: {
       priority,
-      supportNeeded,
-      focusAreas: focusAreas.length > 0 ? focusAreas : ['Mantenimiento general de habilidades'],
+      supportNeeded: currentAverage < 3 ? 'alto' : 'medio',
+      focusAreas,
       personalizedTips: personalizedAnalysis.tips
+    },
+    // Añadimos contexto extra para el refinamiento por IA
+    contextForAI: {
+      activeCustomActivities: personalizedActivities.filter(p => p.is_active).map(p => p.activity_name),
+      recentSuccess: personalizedActivities.filter(p => p.results_notes).map(p => p.activity_name)
     }
   };
 }

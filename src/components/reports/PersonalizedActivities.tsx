@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle2, Clock, Target, TrendingUp, Package, Trash2, ChevronRight, Pencil, Save, X } from "lucide-react";
+import { CheckCircle2, Clock, Target, TrendingUp, Package, Trash2, ChevronRight, Pencil, Save, X, Sparkles, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
@@ -57,6 +57,7 @@ export function PersonalizedActivities({ activities, childId, childName, onActiv
   const [selectedActivity, setSelectedActivity] = useState<PersonalizedActivity | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isRefining, setIsRefining] = useState(false);
   const [editForm, setEditForm] = useState<Partial<PersonalizedActivity>>({});
 
   const startEditing = () => {
@@ -79,6 +80,48 @@ export function PersonalizedActivities({ activities, childId, childName, onActiv
   const cancelEditing = () => {
     setIsEditing(false);
     setEditForm({});
+  };
+
+  const handleRefineText = async (field: 'description' | 'progression_notes') => {
+    const textToRefine = editForm[field];
+    if (!textToRefine || textToRefine.trim().length < 5) {
+      toast({
+        title: "Texto muy corto",
+        description: "Escribe algo primero para que la IA pueda optimizarlo.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsRefining(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('refine-report-text', {
+        body: {
+          text: textToRefine,
+          sectionTitle: field === 'description' ? 'Descripción de Actividad' : 'Instrucciones/Pasos',
+          reportType: 'actividades'
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.refinedText) {
+        setEditForm(prev => ({ ...prev, [field]: data.refinedText }));
+        toast({
+          title: "Texto optimizado",
+          description: "La IA ha mejorado la redacción del campo.",
+        });
+      }
+    } catch (error: any) {
+      console.error('Error refining text:', error);
+      toast({
+        title: "Error de IA",
+        description: "No se pudo conectar con el servicio de refinamiento.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsRefining(false);
+    }
   };
 
   const saveEdits = async () => {
@@ -310,6 +353,28 @@ export function PersonalizedActivities({ activities, childId, childName, onActiv
             <div className="space-y-4 py-4">
               {isEditing ? (
                 <div className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Descripción de la actividad</Label>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-[10px] gap-1 px-2 text-primary hover:bg-primary/10"
+                        onClick={() => handleRefineText('description')}
+                        disabled={isRefining}
+                      >
+                        {isRefining ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                        Optimizar con IA
+                      </Button>
+                    </div>
+                    <Textarea
+                      value={editForm.description || ''}
+                      onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                      placeholder="Descripción de la actividad"
+                      rows={2}
+                    />
+                  </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Nivel de dificultad</Label>
@@ -333,9 +398,9 @@ export function PersonalizedActivities({ activities, childId, childName, onActiv
                       <Label>Reemplaza actividad</Label>
                       <Select
                         value={editForm.replaces_activity_id?.toString() || 'new'}
-                        onValueChange={(value) => setEditForm({ 
-                          ...editForm, 
-                          replaces_activity_id: value === 'new' ? null : parseInt(value) 
+                        onValueChange={(value) => setEditForm({
+                          ...editForm,
+                          replaces_activity_id: value === 'new' ? null : parseInt(value)
                         })}
                       >
                         <SelectTrigger>
@@ -377,8 +442,8 @@ export function PersonalizedActivities({ activities, childId, childName, onActiv
                     <Label>Materiales necesarios (separados por coma)</Label>
                     <Input
                       value={Array.isArray(editForm.materials_needed) ? editForm.materials_needed.join(', ') : ''}
-                      onChange={(e) => setEditForm({ 
-                        ...editForm, 
+                      onChange={(e) => setEditForm({
+                        ...editForm,
                         materials_needed: e.target.value.split(',').map(m => m.trim()).filter(Boolean)
                       })}
                       placeholder="Lápiz, papel, tijeras..."
@@ -396,7 +461,19 @@ export function PersonalizedActivities({ activities, childId, childName, onActiv
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Notas de progresión</Label>
+                    <div className="flex items-center justify-between">
+                      <Label>Notas de progresión / Pasos</Label>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-[10px] gap-1 px-2 text-primary hover:bg-primary/10"
+                        onClick={() => handleRefineText('progression_notes')}
+                        disabled={isRefining}
+                      >
+                        {isRefining ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                        Optimizar con IA
+                      </Button>
+                    </div>
                     <Textarea
                       value={editForm.progression_notes || ''}
                       onChange={(e) => setEditForm({ ...editForm, progression_notes: e.target.value })}
@@ -454,8 +531,8 @@ export function PersonalizedActivities({ activities, childId, childName, onActiv
                         <div className="flex-1">
                           <p className="font-medium text-sm">Reemplaza:</p>
                           <p className="text-sm text-muted-foreground">
-                            {selectedActivity.replaces_activity_id 
-                              ? ACTIVITY_NAMES[selectedActivity.replaces_activity_id - 1] 
+                            {selectedActivity.replaces_activity_id
+                              ? ACTIVITY_NAMES[selectedActivity.replaces_activity_id - 1]
                               : 'Nueva actividad (no reemplaza ninguna)'}
                           </p>
                         </div>

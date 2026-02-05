@@ -2,26 +2,56 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
+import { VitePWA } from 'vite-plugin-pwa';
+
 // https://vitejs.dev/config/
 export default defineConfig({
   server: {
-    host: "::",
-    port: 8080
+    port: 8080,
+    strictPort: true,
+    host: true,
+    hmr: {
+      clientPort: 8080,
+    },
   },
-  plugins: [react()],
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+      manifest: {
+        name: 'SEEDUMOTOR FINE',
+        short_name: 'SEEDUMOTOR',
+        description: 'Sistema de Evaluación Educativa de Motricidad Fina',
+        theme_color: '#ffffff',
+        icons: [
+          {
+            src: 'pwa-192x192.png',
+            sizes: '192x192',
+            type: 'image/png'
+          },
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png'
+          }
+        ]
+      }
+    })
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      "react": path.resolve(__dirname, "./node_modules/react"),
-      "react-dom": path.resolve(__dirname, "./node_modules/react-dom")
+      "react": path.resolve(__dirname, "node_modules/react"),
+      "react-dom": path.resolve(__dirname, "node_modules/react-dom"),
+      "react-router-dom": path.resolve(__dirname, "node_modules/react-router-dom"),
     },
-    dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime"]
+    dedupe: ["react", "react-dom", "react-router-dom"]
   },
   optimizeDeps: {
-    include: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime"],
+    include: ["react", "react-dom", "react-router-dom"],
     force: true
   },
-  cacheDir: "node_modules/.vite-v4",
   build: {
     chunkSizeWarningLimit: 1000,
     cssCodeSplit: true,

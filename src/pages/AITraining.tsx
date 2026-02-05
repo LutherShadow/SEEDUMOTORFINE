@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Brain, Play, Download, Info, History } from "lucide-react";
+import { ArrowLeft, Brain, Play, Download, Info, History, Sparkles, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useTutorial } from "@/components/tutorial/TutorialProvider";
@@ -67,7 +67,8 @@ const AITraining = () => {
     f1Medium: 0,
     f1Low: 0,
     trainingTime: 0,
-    lastTrained: "No hay entrenamientos previos"
+    lastTrained: "No hay entrenamientos previos",
+    modelContext: ""
   });
 
   const [confusionMatrix, setConfusionMatrix] = useState([
@@ -88,7 +89,7 @@ const AITraining = () => {
         .select('*')
         .order('trained_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (error) {
         if (error.code === 'PGRST116') {
@@ -99,31 +100,33 @@ const AITraining = () => {
       }
 
       if (data) {
+        const modelData = data as any;
         setMetrics({
-          accuracy: data.accuracy || 0,
-          precisionHigh: data.precision_high || 0,
-          precisionMedium: data.precision_medium || 0,
-          precisionLow: data.precision_low || 0,
-          f1High: data.f1_high || 0,
-          f1Medium: data.f1_medium || 0,
-          f1Low: data.f1_low || 0,
-          trainingTime: data.training_time_seconds || 0,
-          lastTrained: new Date(data.trained_at).toLocaleString('es-MX', {
+          accuracy: modelData.accuracy || 0,
+          precisionHigh: modelData.precision_high || 0,
+          precisionMedium: modelData.precision_medium || 0,
+          precisionLow: modelData.precision_low || 0,
+          f1High: modelData.f1_high || 0,
+          f1Medium: modelData.f1_medium || 0,
+          f1Low: modelData.f1_low || 0,
+          trainingTime: modelData.training_time_seconds || 0,
+          lastTrained: new Date(modelData.trained_at).toLocaleString('es-MX', {
             day: 'numeric',
             month: 'short',
             year: 'numeric',
             hour: '2-digit',
             minute: '2-digit'
-          })
+          }),
+          modelContext: modelData.model_context || ""
         });
 
-        if (data.confusion_matrix) {
-          setConfusionMatrix(data.confusion_matrix as number[][]);
+        if (modelData.confusion_matrix) {
+          setConfusionMatrix(modelData.confusion_matrix as number[][]);
         }
 
-        setTotalSamples(data.training_samples + data.validation_samples + data.test_samples);
-        setTrainingSamples(data.training_samples);
-        setValidationSamples(data.validation_samples);
+        setTotalSamples(modelData.training_samples + modelData.validation_samples + modelData.test_samples);
+        setTrainingSamples(modelData.training_samples);
+        setValidationSamples(modelData.validation_samples);
       }
     } catch (error: any) {
       console.error('Error cargando último entrenamiento:', error);
@@ -188,7 +191,8 @@ const AITraining = () => {
             year: 'numeric',
             hour: '2-digit',
             minute: '2-digit'
-          })
+          }),
+          modelContext: data.learnedContext || ""
         });
 
         if (data.metrics.confusion_matrix) {
@@ -462,6 +466,49 @@ const AITraining = () => {
                           Último entrenamiento:
                         </span>
                         <span className="font-medium">{metrics.lastTrained}</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </MotionDiv>
+
+            {/* Learned Context Card */}
+            <MotionDiv variants={itemVariants} className="md:col-span-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Info className="h-5 w-5 text-primary" />
+                    Contexto de IA Aprendido (RAG)
+                  </CardTitle>
+                  <CardDescription>
+                    Patrones y reglas extraídas de las intervenciones exitosas previas
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="p-4 bg-muted/30 rounded-lg border font-mono text-sm whitespace-pre-wrap">
+                    {metrics.modelContext && metrics.modelContext.includes("Default Neural Context")
+                      ? metrics.modelContext.replace("Default Neural Context: Sufficient data volume achieved. Optimization standard.", "Contexto Neuronal por Defecto: Volumen de datos suficiente alcanzado. Optimización estándar.")
+                      : (metrics.modelContext || "No se ha generado contexto específico todavía. Entrena el modelo para extraer patrones.")
+                    }
+                  </div>
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-3 bg-primary/5 rounded-md border border-primary/20 flex items-start gap-3">
+                      <div className="p-1.5 bg-primary/10 rounded-full text-primary">
+                        <Sparkles className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">Sugerencias más Exactas</p>
+                        <p className="text-xs text-muted-foreground">El modelo ahora reconoce patrones de éxito previos para recomendar actividades.</p>
+                      </div>
+                    </div>
+                    <div className="p-3 bg-secondary/5 rounded-md border border-secondary/20 flex items-start gap-3">
+                      <div className="p-1.5 bg-secondary/10 rounded-full text-secondary">
+                        <TrendingUp className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">Progreso Personalizado</p>
+                        <p className="text-xs text-muted-foreground">Las predicciones de evolución se ajustan al estilo de aprendizaje del niño.</p>
                       </div>
                     </div>
                   </div>

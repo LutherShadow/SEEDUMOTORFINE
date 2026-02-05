@@ -58,7 +58,7 @@ export const EvaluationForm = ({ children, onSubmit, onCancel }: EvaluationFormP
   const [evaluationDate, setEvaluationDate] = useState(new Date().toISOString().split('T')[0]);
   const [scores, setScores] = useState<Record<string, string>>({});
   const [observations, setObservations] = useState<Record<string, string>>({});
-  
+
   // Actividades disponibles para el aprendiente seleccionado
   const [availableActivities, setAvailableActivities] = useState<Activity[]>(STANDARD_ACTIVITIES);
   const [personalizedActivities, setPersonalizedActivities] = useState<any[]>([]);
@@ -109,8 +109,8 @@ export const EvaluationForm = ({ children, onSubmit, onCancel }: EvaluationFormP
 
       // Agregar actividades personalizadas
       (data || []).forEach((pa: any, index: number) => {
-        const targetSkills = Array.isArray(pa.target_skills) 
-          ? pa.target_skills.join(', ') 
+        const targetSkills = Array.isArray(pa.target_skills)
+          ? pa.target_skills.join(', ')
           : (typeof pa.target_skills === 'string' ? pa.target_skills : pa.description);
 
         if (pa.replaces_activity_id) {
@@ -124,7 +124,7 @@ export const EvaluationForm = ({ children, onSubmit, onCancel }: EvaluationFormP
             originalActivityId: pa.replaces_activity_id,
             personalizedId: pa.id
           };
-          
+
           if (replaceIndex >= 0) {
             combinedActivities.splice(replaceIndex, 0, newActivity);
           } else {
@@ -172,7 +172,7 @@ export const EvaluationForm = ({ children, onSubmit, onCancel }: EvaluationFormP
         ? prev.filter(id => id !== childId)
         : [...prev, childId];
     });
-    
+
     // Limpiar selección de actividades al cambiar de aprendiente
     setSelectedActivities([]);
     setScores({});
@@ -182,26 +182,37 @@ export const EvaluationForm = ({ children, onSubmit, onCancel }: EvaluationFormP
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const childrenToEvaluate = evaluationType === "individual" 
+    const childrenToEvaluate = evaluationType === "individual"
       ? selectedChildren.slice(0, 1)
       : selectedChildren;
 
     const evaluations = childrenToEvaluate.map(childId => {
       const evaluationData: any = {
         child_id: childId,
-        evaluation_date: evaluationDate
+        evaluation_date: evaluationDate,
+        evaluator_id: undefined, // Will be set in Evaluations.tsx
+        additional_scores: []
       };
 
       selectedActivities.forEach(activityId => {
-        // Para actividades personalizadas con ID >= 100, necesitamos manejarlas diferente
-        // Por ahora, las actividades personalizadas que reemplazan mantienen el ID original
-        const testId = activityId <= 8 ? activityId : null;
-        
-        if (testId) {
-          evaluationData[`test_${testId}_score`] = scores[`${childId}_${activityId}`] 
-            ? parseInt(scores[`${childId}_${activityId}`]) 
-            : null;
-          evaluationData[`test_${testId}_observations`] = observations[`${childId}_${activityId}`] || null;
+        const activity = availableActivities.find(a => a.id === activityId);
+        const scoreValue = scores[`${childId}_${activityId}`]
+          ? parseInt(scores[`${childId}_${activityId}`])
+          : null;
+        const obsValue = observations[`${childId}_${activityId}`] || null;
+
+        if (activityId <= 8) {
+          evaluationData[`test_${activityId}_score`] = scoreValue;
+          evaluationData[`test_${activityId}_observations`] = obsValue;
+        } else {
+          // Actividades adicionales (IA)
+          evaluationData.additional_scores.push({
+            activity_id: activityId,
+            name: activity?.name || "Actividad IA",
+            score: scoreValue,
+            observations: obsValue,
+            personalized_id: activity?.personalizedId
+          });
         }
       });
 
@@ -219,8 +230,8 @@ export const EvaluationForm = ({ children, onSubmit, onCancel }: EvaluationFormP
         <div className="space-y-6 pb-4">
           <div className="space-y-3">
             <Label className="text-base font-semibold">Tipo de Evaluación</Label>
-            <RadioGroup 
-              value={evaluationType} 
+            <RadioGroup
+              value={evaluationType}
               onValueChange={(value: any) => {
                 setEvaluationType(value);
                 setSelectedChildren([]);
@@ -289,7 +300,7 @@ export const EvaluationForm = ({ children, onSubmit, onCancel }: EvaluationFormP
                 </Badge>
               )}
             </div>
-            
+
             {loadingActivities ? (
               <Card className="p-4 border-2">
                 <p className="text-center text-muted-foreground">Cargando actividades...</p>
@@ -355,7 +366,7 @@ export const EvaluationForm = ({ children, onSubmit, onCancel }: EvaluationFormP
                       {selectedActivities.map(activityId => {
                         const activity = availableActivities.find(a => a.id === activityId);
                         const key = `${childId}_${activityId}`;
-                        
+
                         return (
                           <Card key={activityId} className={`p-4 border hover:border-primary/40 transition-all hover:shadow-md ${activity?.isPersonalized ? 'bg-primary/5' : 'bg-accent/30'}`}>
                             <div className="flex items-center gap-2 mb-2">
@@ -368,7 +379,7 @@ export const EvaluationForm = ({ children, onSubmit, onCancel }: EvaluationFormP
                               )}
                             </div>
                             <p className="text-sm text-muted-foreground mb-4 italic">{activity?.skill}</p>
-                            
+
                             <div className="space-y-4">
                               <div className="space-y-2">
                                 <Label className="font-semibold">Puntuación *</Label>
@@ -389,7 +400,7 @@ export const EvaluationForm = ({ children, onSubmit, onCancel }: EvaluationFormP
                                   </SelectContent>
                                 </Select>
                               </div>
-                              
+
                               <div className="space-y-2">
                                 <Label className="font-semibold">Observaciones</Label>
                                 <Textarea
@@ -417,7 +428,7 @@ export const EvaluationForm = ({ children, onSubmit, onCancel }: EvaluationFormP
         <Button type="button" variant="outline" onClick={onCancel} className="min-w-[120px] h-11">
           Cancelar
         </Button>
-        <Button 
+        <Button
           type="submit"
           disabled={selectedChildren.length === 0 || selectedActivities.length === 0}
           className="min-w-[120px] h-11"

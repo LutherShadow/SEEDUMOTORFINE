@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, TrendingDown, AlertTriangle, Target, Zap } from "lucide-react";
+import { TrendingUp, TrendingDown, AlertTriangle, Target, Zap, Wand2, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 
 interface Prediction {
@@ -49,9 +50,11 @@ interface ProgressPredictionProps {
       focusAreas: string[];
     };
   };
+  onRefine?: () => void;
+  isRefining?: boolean;
 }
 
-export const ProgressPrediction = ({ predictions }: ProgressPredictionProps) => {
+export const ProgressPrediction = ({ predictions, onRefine, isRefining }: ProgressPredictionProps) => {
   const getTrendIcon = (trend: string) => {
     if (trend.includes('mejora')) return <TrendingUp className="h-4 w-4 text-green-600" />;
     if (trend.includes('deterioro')) return <TrendingDown className="h-4 w-4 text-red-600" />;
@@ -75,6 +78,17 @@ export const ProgressPrediction = ({ predictions }: ProgressPredictionProps) => 
     if (potential === 'alto') return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
     if (potential === 'medio') return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
     return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
+  };
+
+  const renderFormattedText = (text: string) => {
+    if (!text) return null;
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={i} className="font-bold text-blue-900 dark:text-blue-300">{part.slice(2, -2)}</strong>;
+      }
+      return part;
+    });
   };
 
   return (
@@ -109,7 +123,7 @@ export const ProgressPrediction = ({ predictions }: ProgressPredictionProps) => 
                 </span>
               </div>
             </div>
-            
+
             <div className="bg-background p-4 rounded-lg">
               <p className="text-sm text-muted-foreground mb-2">Tendencia</p>
               <div className="flex items-center gap-2">
@@ -119,7 +133,7 @@ export const ProgressPrediction = ({ predictions }: ProgressPredictionProps) => 
                 </Badge>
               </div>
             </div>
-            
+
             <div className="bg-background p-4 rounded-lg">
               <p className="text-sm text-muted-foreground mb-2">Velocidad de Aprendizaje</p>
               <div className="flex items-center gap-2">
@@ -135,7 +149,7 @@ export const ProgressPrediction = ({ predictions }: ProgressPredictionProps) => 
           {/* Proyecciones Temporales */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold">Proyecciones Temporales</h3>
-            
+
             {[
               { label: '1 Mes', data: predictions.overallProgress.predictions.oneMonth },
               { label: '3 Meses', data: predictions.overallProgress.predictions.threeMonths },
@@ -159,8 +173,8 @@ export const ProgressPrediction = ({ predictions }: ProgressPredictionProps) => 
                     {data.confidenceInterval[0].toFixed(2)} - {data.confidenceInterval[1].toFixed(2)}
                   </Badge>
                 </div>
-                <Progress 
-                  value={(data.expectedAverage / 5) * 100} 
+                <Progress
+                  value={(data.expectedAverage / 5) * 100}
                   className="h-2"
                 />
               </div>
@@ -198,7 +212,7 @@ export const ProgressPrediction = ({ predictions }: ProgressPredictionProps) => 
                     Potencial: {activity.improvementPotential}
                   </Badge>
                 </div>
-                
+
                 <div className="grid grid-cols-3 gap-2 text-center">
                   <div className="bg-muted/50 p-2 rounded">
                     <p className="text-xs text-muted-foreground">1 mes</p>
@@ -213,9 +227,9 @@ export const ProgressPrediction = ({ predictions }: ProgressPredictionProps) => 
                     <p className="font-bold">{activity.predictions.sixMonths.toFixed(1)}</p>
                   </div>
                 </div>
-                
-                <Progress 
-                  value={(activity.confidence * 100)} 
+
+                <Progress
+                  value={(activity.confidence * 100)}
                   className="h-1"
                 />
                 <p className="text-xs text-muted-foreground text-right">
@@ -240,7 +254,7 @@ export const ProgressPrediction = ({ predictions }: ProgressPredictionProps) => 
           <CardContent>
             <ul className="space-y-2">
               {predictions.riskFactors.map((risk, index) => (
-                <li key={index} className="flex items-start gap-2 text-sm">
+                <li key={index} className="flex items-start gap-2 text-sm text-justify">
                   <span className="text-orange-600 mt-1">•</span>
                   <span>{risk}</span>
                 </li>
@@ -260,7 +274,7 @@ export const ProgressPrediction = ({ predictions }: ProgressPredictionProps) => 
           <CardContent>
             <ul className="space-y-2">
               {predictions.opportunities.map((opportunity, index) => (
-                <li key={index} className="flex items-start gap-2 text-sm">
+                <li key={index} className="flex items-start gap-2 text-sm text-justify">
                   <span className="text-green-600 mt-1">•</span>
                   <span>{opportunity}</span>
                 </li>
@@ -272,21 +286,39 @@ export const ProgressPrediction = ({ predictions }: ProgressPredictionProps) => 
 
       {/* Recomendaciones */}
       <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20">
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <CardTitle>Recomendaciones Estratégicas</CardTitle>
+          {onRefine && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs gap-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200"
+              onClick={onRefine}
+              disabled={isRefining}
+            >
+              {isRefining ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Wand2 className="h-3 w-3" />
+              )}
+              Optimizar con IA
+            </Button>
+          )}
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="bg-background p-4 rounded-lg">
             <p className="text-sm font-semibold text-blue-600 mb-2">Prioridad Máxima</p>
-            <p className="text-sm">{predictions.recommendations.priority}</p>
+            <p className="text-sm whitespace-pre-wrap text-justify leading-relaxed">
+              {renderFormattedText(predictions.recommendations.priority)}
+            </p>
           </div>
-          
+
           <div className="flex items-center gap-4">
             <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
               Apoyo necesario: {predictions.recommendations.supportNeeded}
             </Badge>
           </div>
-          
+
           <div>
             <p className="text-sm font-semibold mb-2">Áreas de Enfoque</p>
             <div className="flex flex-wrap gap-2">

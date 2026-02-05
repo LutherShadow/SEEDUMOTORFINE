@@ -29,10 +29,27 @@ export default function QuestionnaireManage() {
   const { data: questionnaires = [], isLoading } = useQuery({
     queryKey: ["all-questionnaires"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No user");
+
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      const isAdmin = roleData?.role === "admin";
+
+      let query = supabase
         .from("questionnaires")
         .select("*")
         .order("created_at", { ascending: false });
+
+      if (!isAdmin) {
+        query = query.eq("created_by", user.id);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return data;

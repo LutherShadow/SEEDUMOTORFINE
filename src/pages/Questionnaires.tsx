@@ -42,10 +42,13 @@ export default function Questionnaires() {
   const { data: questionnaires = [], isLoading } = useQuery({
     queryKey: ["questionnaires"],
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No user");
+
       const { data, error } = await supabase
         .from("questionnaires")
         .select("*")
-        .eq("is_active", true)
+        .or(`is_active.eq.true,created_by.eq.${user.id}`)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -262,12 +265,10 @@ export default function Questionnaires() {
                 <Link2 className="w-4 h-4 mr-2" />
                 Generar Enlace
               </Button>
-              {isAdmin && (
-                <Button onClick={() => navigate("/questionnaires/manage")}>
-                  <Settings className="w-4 h-4 mr-2" />
-                  Administrar Cuestionarios
-                </Button>
-              )}
+              <Button onClick={() => navigate("/questionnaires/manage")}>
+                <Settings className="w-4 h-4 mr-2" />
+                Administrar Cuestionarios
+              </Button>
             </div>
           </MotionDiv>
 
