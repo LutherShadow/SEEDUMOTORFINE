@@ -1,4 +1,4 @@
-export type ReportType = 'motricidad' | 'cornell' | 'chaea' | 'tam' | 'competencias' | 'prediccion' | 'custom_questionnaire';
+export type ReportType = 'motricidad' | 'cornell' | 'chaea' | 'tam' | 'competencias' | 'prediccion' | 'sugerencias' | 'custom_questionnaire';
 
 export interface ReportSection {
   id: string;
@@ -222,7 +222,7 @@ El análisis identifica la modalidad sensorial predominante y las modalidades se
       { id: 'proyecciones', title: 'Proyecciones Temporales', description: 'Predicciones a 1, 3 y 6 meses' },
       { id: 'areas_enfoque', title: 'Áreas de Enfoque', description: 'Competencias prioritarias para desarrollo' },
       { id: 'factores_riesgo', title: 'Factores de Riesgo', description: 'Elementos que podrían afectar el progreso' },
-      { id: 'recomendaciones', title: 'Recomendaciones IA', description: 'Estrategias sugeridas por el modelo' }
+      { id: 'recomendaciones', title: 'Sugerencias IA', description: 'Estrategias sugeridas por el modelo' }
     ],
     defaultConfig: {
       header_text: 'Reporte de Predicción de Progreso - Modelo IA',
@@ -318,6 +318,29 @@ El modelo recomienda monitoreo quincenal de estos factores y ajuste proactivo de
       primary_color: '#8B5CF6',
       template: 'modern',
       section_order: ['estado_actual', 'proyecciones', 'areas_enfoque', 'factores_riesgo', 'recomendaciones']
+    }
+  },
+  {
+    id: 'sugerencias',
+    name: 'Sugerencias IA de Actividades',
+    description: 'Reporte especializado de sugerencias personalizadas generadas por IA',
+    icon: '✨',
+    custom_sections: [
+      { id: 'introduction', title: 'Contexto de Sugerencias', description: 'Introducción a las sugerencias generadas' },
+      { id: 'recommendations', title: 'Detalle de Sugerencias', description: 'Listado de actividades sugeridas' },
+      { id: 'conclusion', title: 'Plan de Acción', description: 'Próximos pasos recomendados' }
+    ],
+    defaultConfig: {
+      header_text: 'Reporte de Sugerencias de Actividades IA',
+      footer_text: 'Sugerencias Generadas por Sistema Inteligente',
+      content_introduction_text: 'Este reporte presenta un conjunto de sugerencias de actividades personalizadas, diseñadas específicamente para fortalecer las áreas de oportunidad identificadas en las evaluaciones recientes. Cada sugerencia ha sido optimizada por nuestro sistema de IA para adaptarse al perfil de aprendizaje único del aprendiente.',
+      content_recommendations_text: 'Las siguientes sugerencias incluyen actividades prácticas, materiales recomendados y beneficios esperados para potenciar el desarrollo motor y cognitivo.',
+      content_conclusion_text: 'Se recomienda integrar estas sugerencias en la rutina diaria del aprendiente, manteniendo un registro de los avances y ajustando la intensidad según la respuesta observada. El seguimiento constante es clave para el éxito del plan de acción.',
+      content_company_name: 'Sistema de Sugerencias Inteligentes',
+      content_responsible_agent: 'Asistente IA de Desarrollo',
+      primary_color: '#EC4899',
+      template: 'modern',
+      section_order: ['introduction', 'recommendations', 'conclusion']
     }
   },
   {

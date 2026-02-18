@@ -3,12 +3,21 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Download } from "lucide-react";
+import { Download, Layout } from "lucide-react";
 import type { ReportType } from "@/lib/reportTypeTemplates";
+import { useState } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 
 export default function QuestionnaireResult() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [selectedTemplate, setSelectedTemplate] = useState<'classic' | 'modern' | 'minimal'>('modern');
 
   // Fetch response
   const { data: response, isLoading } = useQuery({
@@ -73,18 +82,24 @@ export default function QuestionnaireResult() {
       chaea: 'chaea',
       cornell: 'cornell',
     };
-    const reportType: ReportType = reportTypeMap[questionnaireType || ''] || 'tam';
+    const reportType: ReportType = reportTypeMap[questionnaireType || ''] || 'custom_questionnaire';
 
     // Usar el generador unificado de reportes para aplicar plantillas y estilos
-    const { generateReportPDF } = await import('@/lib/ReportPDFGenerator');
+    const { ReportPDFGenerator } = await import('@/lib/ReportPDFGenerator');
+
+    // Create generator with template override
+    const generator = new ReportPDFGenerator({
+      template: selectedTemplate
+    });
 
     const childName = response.children?.name || 'Aprendiente';
     const evaluationDate = response.response_date || new Date().toISOString();
 
-    await generateReportPDF({
+    await generator.generatePDF({
       childName,
       reportType,
       evaluationDate,
+      dimensionScores: response.dimension_scores as Record<string, number>,
     });
   };
 
@@ -199,14 +214,39 @@ export default function QuestionnaireResult() {
           </Card>
         )}
 
-        <div className="flex gap-4">
-          <Button onClick={() => navigate("/questionnaires")} variant="outline" className="flex-1">
-            Volver a Cuestionarios
-          </Button>
-          <Button onClick={generatePDF} className="flex-1">
-            <Download className="w-4 h-4 mr-2" />
-            Descargar PDF
-          </Button>
+        <div className="flex flex-col sm:flex-row gap-4 bg-card p-6 rounded-xl border shadow-sm">
+          <div className="flex-1 space-y-2">
+            <label className="text-sm font-medium flex items-center gap-2">
+              <Layout className="w-4 h-4 text-primary" />
+              Estilo de Plantilla
+            </label>
+            <Select
+              value={selectedTemplate}
+              onValueChange={(value: any) => setSelectedTemplate(value)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Seleccionar Estilo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="modern">Moderna (Integración IA)</SelectItem>
+                <SelectItem value="classic">Clásica (Estándar)</SelectItem>
+                <SelectItem value="minimal">Minimalista</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-end gap-3 flex-1">
+            <Button
+              onClick={() => navigate("/questionnaires")}
+              variant="outline"
+              className="flex-1"
+            >
+              Volver
+            </Button>
+            <Button onClick={generatePDF} className="flex-1">
+              <Download className="w-4 h-4 mr-2" />
+              Descargar PDF
+            </Button>
+          </div>
         </div>
       </main>
     </div>

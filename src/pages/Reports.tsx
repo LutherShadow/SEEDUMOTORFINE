@@ -189,7 +189,8 @@ const Reports = () => {
       const { data, error } = await supabase
         .from('report_settings')
         .select('use_gemini_charts')
-        .single();
+        .eq('report_type', 'motricidad') // Assume motricidad settings carry the global chart preference for the dashboard
+        .maybeSingle();
 
       if (!error && data) {
         setUseAICharts(data.use_gemini_charts ?? false);
@@ -363,6 +364,43 @@ const Reports = () => {
   const generateAISuggestions = async () => {
     if (evaluations.length === 0) return;
 
+    setLoadingSuggestions(true);
+    setAiSuggestions(null);
+
+    // Get latest evaluation ID to link the suggestions
+    const latestEvaluation = evaluations[evaluations.length - 1];
+    const latestEvalId = latestEvaluation.id;
+
+    // 1. Check if we already have generated suggestions for this evaluation
+    try {
+      const { data: existingSuggestions, error: fetchError } = await supabase
+        .from('ai_results')
+        .select('*')
+        .eq('evaluation_id', latestEvalId)
+        .eq('classification', 'suggestions_v1')
+        .limit(1)
+        .maybeSingle();
+
+      if (existingSuggestions && existingSuggestions.recommendations) {
+        console.log("Suggestions found in cache (DB):", existingSuggestions);
+        try {
+          const parsedSuggestions = JSON.parse(existingSuggestions.recommendations);
+          setAiSuggestions(parsedSuggestions);
+          toast({
+            title: "Sugerencias Cargadas",
+            description: "Se han recuperado las sugerencias guardadas para esta evaluación."
+          });
+          setLoadingSuggestions(false);
+          return; // Exit early
+        } catch (parseError) {
+          console.error("Error parsing cached suggestions:", parseError);
+        }
+      }
+    } catch (dbError) {
+      console.error("Error checking for existing suggestions:", dbError);
+    }
+
+    // 2. Generate if not found
     let missingQuestionnairesList: string[] = [];
     try {
       const { data: questionnaires } = await supabase
@@ -403,9 +441,6 @@ const Reports = () => {
       console.error('Error checking questionnaires:', error);
     }
 
-    setLoadingSuggestions(true);
-    setAiSuggestions(null);
-
     const childName = children.find(c => c.id === selectedChild)?.name || "Aprendiente";
 
     // LÓGICA ORIGINAL RESTAURADA + ENRIQUECIMIENTO HÍBRIDO
@@ -437,12 +472,29 @@ const Reports = () => {
       );
       setAiSuggestions(localSuggestions);
 
+      // 3. Save to DB
+      try {
+        const { error: insertError } = await supabase
+          .from('ai_results')
+          .insert({
+            evaluation_id: latestEvalId,
+            classification: 'suggestions_v1',
+            recommendations: JSON.stringify(localSuggestions),
+            confidence_score: 0.90,
+            created_at: new Date().toISOString()
+          });
+
+        if (insertError) console.error("Error saving suggestions to DB:", insertError);
+      } catch (saveError) {
+        console.error("Error saving suggestions:", saveError);
+      }
+
       await fetchPersonalizedActivities();
       await fetchCompetencyIndex();
 
       toast({
         title: "Sugerencias Generadas",
-        description: "Basadas en tu Modelo Local Entrenado (RAG)."
+        description: "Basadas en tu Modelo Local Entrenado (RAG) y guardadas."
       });
     };
 
@@ -636,6 +688,44 @@ const Reports = () => {
       return;
     }
 
+    setLoadingPredictions(true);
+    setProgressPredictions(null);
+
+    // Get latest evaluation ID to link the prediction
+    const latestEvaluation = evaluations[evaluations.length - 1]; // evaluations are sorted by date ascending in fetchEvaluations
+    const latestEvalId = latestEvaluation.id;
+
+    // 1. Check if we already have a generated prediction for this evaluation
+    try {
+      const { data: existingPrediction, error: fetchError } = await supabase
+        .from('ai_results')
+        .select('*')
+        .eq('evaluation_id', latestEvalId)
+        .eq('classification', 'prediction_v1')
+        .limit(1)
+        .maybeSingle();
+
+      if (existingPrediction && existingPrediction.recommendations) {
+        console.log("Prediction found in cache (DB):", existingPrediction);
+        try {
+          const parsedPrediction = JSON.parse(existingPrediction.recommendations);
+          setProgressPredictions(parsedPrediction);
+          toast({
+            title: "Predicción Cargada",
+            description: "Se ha recuperado la predicción guardada para esta evaluación."
+          });
+          setLoadingPredictions(false);
+          return; // Exit early, use cached version
+        } catch (parseError) {
+          console.error("Error parsing cached prediction:", parseError);
+          // If parse fails, proceed to generate new one
+        }
+      }
+    } catch (dbError) {
+      console.error("Error checking for existing prediction:", dbError);
+    }
+
+    // 2. Generate new prediction if not found
     let missingQuestionnairesList: string[] = [];
     try {
       const { data: questionnaires } = await supabase
@@ -676,9 +766,6 @@ const Reports = () => {
       console.error('Error checking questionnaires:', error);
     }
 
-    setLoadingPredictions(true);
-    setProgressPredictions(null);
-
     const childName = children.find(c => c.id === selectedChild)?.name || "Aprendiente";
 
     const useLocalEngine = async () => {
@@ -695,11 +782,33 @@ const Reports = () => {
         childName,
         personalizedActivities // Pasamos las actividades personalizadas
       );
+
       setProgressPredictions(predictions);
 
+      // 3. Save the generated prediction to DB
+      try {
+        const { error: insertError } = await supabase
+          .from('ai_results')
+          .insert({
+            evaluation_id: latestEvalId,
+            classification: 'prediction_v1',
+            recommendations: JSON.stringify(predictions),
+            confidence_score: predictions.modelInfo?.confidence || 0.95,
+            created_at: new Date().toISOString()
+          }); // We don't have 'child_id' in ai_results, relying on evaluation_id link
+
+        if (insertError) {
+          console.error("Error saving prediction to DB:", insertError);
+        } else {
+          console.log("Prediction saved to DB");
+        }
+      } catch (saveError) {
+        console.error("Error saving prediction:", saveError);
+      }
+
       toast({
-        title: "Predicciones Locales",
-        description: "Predicciones generadas con el modelo entrenado localmente"
+        title: "Predicciones Generadas",
+        description: "Predicciones generadas y guardadas exitosamente."
       });
     };
 
@@ -767,104 +876,34 @@ const Reports = () => {
   };
 
   const exportSuggestionsToPDF = async () => {
-    if (!aiSuggestions) return;
+    if (!aiSuggestions || !selectedChild) return;
 
     try {
-      const { jsPDF } = await import('jspdf');
-      const doc = new jsPDF();
       const childName = children.find(c => c.id === selectedChild)?.name || "Aprendiente";
+      const { ReportPDFGenerator } = await import('@/lib/ReportPDFGenerator');
 
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const margin = 15;
-      const maxWidth = pageWidth - (margin * 2);
-      let yPosition = 20;
+      const dimensionScores = (stats as any)?.stats?.reduce((acc: any, s: any) => {
+        acc[s.activity] = parseFloat(s.avg);
+        return acc;
+      }, {}) || {};
 
-      doc.setFontSize(18);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Sugerencias de IA para Motricidad Fina', margin, yPosition);
-      yPosition += 10;
-
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Alumno: ${childName}`, margin, yPosition);
-      yPosition += 7;
-      doc.text(`Fecha: ${new Date().toLocaleDateString('es-ES')}`, margin, yPosition);
-      yPosition += 15;
-
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Sugerencias Personalizadas:', margin, yPosition);
-      yPosition += 10;
-
-      aiSuggestions.suggestions.forEach((suggestion, index) => {
-        if (yPosition > 250) {
-          doc.addPage();
-          yPosition = 20;
-        }
-
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'bold');
-        const title = `${index + 1}. ${suggestion.activity} (${suggestion.type})`;
-        doc.text(title, margin, yPosition);
-        yPosition += 7;
-
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-
-        const descLines = doc.splitTextToSize(suggestion.description, maxWidth);
-        doc.text(descLines, margin, yPosition);
-        yPosition += (descLines.length * 5) + 5;
-
-        doc.setFont('helvetica', 'bold');
-        doc.text('Beneficios:', margin, yPosition);
-        yPosition += 5;
-        doc.setFont('helvetica', 'normal');
-
-        suggestion.benefits.forEach((benefit) => {
-          const benefitLines = doc.splitTextToSize(`• ${benefit}`, maxWidth - 5);
-          doc.text(benefitLines, margin + 5, yPosition);
-          yPosition += (benefitLines.length * 5);
-        });
-        yPosition += 3;
-
-        doc.setFont('helvetica', 'bold');
-        doc.text('Progreso Esperado:', margin, yPosition);
-        yPosition += 5;
-        doc.setFont('helvetica', 'normal');
-        const progressLines = doc.splitTextToSize(suggestion.expectedProgress, maxWidth);
-        doc.text(progressLines, margin, yPosition);
-        yPosition += (progressLines.length * 5) + 10;
-      });
-
-      if (aiSuggestions.overallRecommendation) {
-        if (yPosition > 230) {
-          doc.addPage();
-          yPosition = 20;
-        }
-
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        doc.text('Recomendación General:', margin, yPosition);
-        yPosition += 8;
-
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        const recLines = doc.splitTextToSize(aiSuggestions.overallRecommendation, maxWidth);
-        doc.text(recLines, margin, yPosition);
-      }
-
-      const fileName = `sugerencias_ia_${childName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
-      doc.save(fileName);
+      const generator = new ReportPDFGenerator();
+      await generator.generateSuggestionsPDF({
+        childName,
+        reportType: 'sugerencias', // Using specialized suggestions type
+        evaluationDate: new Date().toISOString(),
+        dimensionScores
+      }, aiSuggestions);
 
       toast({
         title: "PDF Exportado",
-        description: "Las sugerencias han sido descargadas correctamente"
+        description: "Las sugerencias han sido descargadas con el nuevo diseño institucional"
       });
     } catch (error: any) {
       console.error('Error exporting PDF:', error);
       toast({
         title: "Error",
-        description: "No se pudo exportar el PDF",
+        description: "No se pudo exportar el PDF con el nuevo diseño",
         variant: "destructive"
       });
     }
@@ -877,12 +916,18 @@ const Reports = () => {
       const childName = children.find(c => c.id === selectedChild)?.name || "Aprendiente";
       const { generateReportPDF } = await import('@/lib/ReportPDFGenerator');
 
+      const dimensionScores = (stats as any)?.stats?.reduce((acc: any, s: any) => {
+        acc[s.activity] = parseFloat(s.avg);
+        return acc;
+      }, {}) || {};
+
       await generateReportPDF({
         childName,
         reportType: 'prediccion',
         evaluationDate: new Date().toISOString(),
         predictions: progressPredictions,
-        evaluations
+        evaluations,
+        dimensionScores
       });
 
       toast({
@@ -1266,7 +1311,7 @@ const Reports = () => {
                     {/* Recomendación General de IA */}
                     {aiSuggestions?.overallRecommendation && (
                       <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
-                        <p className="font-semibold mb-2">Recomendación General del Sistema:</p>
+                        <p className="font-semibold mb-2">Sugerencia General del Sistema:</p>
                         <p className="text-sm">{aiSuggestions.overallRecommendation}</p>
                         <div className="mt-2 flex justify-end gap-2">
                           <Button
@@ -1285,7 +1330,7 @@ const Reports = () => {
                           </Button>
                           <Button onClick={exportSuggestionsToPDF} variant="outline" size="sm">
                             <Download className="mr-2 h-4 w-4" />
-                            Descargar PDF Sugerencias
+                            Descargar Reporte Sugerencias IA
                           </Button>
                         </div>
                       </div>

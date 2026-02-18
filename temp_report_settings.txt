@@ -1,0 +1,1730 @@
+﻿1: import React, { useState, useEffect } from "react";
+2: import { useNavigate } from "react-router-dom";
+3: import { supabase } from "@/integrations/supabase/client";
+4: import { Button } from "@/components/ui/button";
+5: import { Card } from "@/components/ui/card";
+6: import { Input } from "@/components/ui/input";
+7: import { Label } from "@/components/ui/label";
+8: import { Textarea } from "@/components/ui/textarea";
+9: import { Switch } from "@/components/ui/switch";
+10: import { Separator } from "@/components/ui/separator";
+11: import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+12: import { ArrowLeft, Upload, Trash2, Settings, Save, FileText, Brain, Laptop, Sparkles, Loader2 } from "lucide-react";
+13: import { useToast } from "@/hooks/use-toast";
+14: import { jsPDF } from "jspdf";
+15: import { contentTemplates, type ContentTemplate } from "@/lib/contentTemplates";
+16: import { reportTypeTemplates, getReportTypeTemplate, type ReportType } from "@/lib/reportTypeTemplates";
+17: import { ReportSectionEditor, type ReportSection } from "@/components/reports/ReportSectionEditor";
+18: // import { OpenRouterConfig } from "@/components/admin/OpenRouterConfig";
+19: import { useTutorial } from "@/components/tutorial/TutorialProvider";
+20: import { reportSettingsTutorial } from "@/components/tutorial/tutorials";
+21: import { TutorialButton } from "@/components/tutorial/TutorialButton";
+22: import { motion, Variants } from "framer-motion";
+23: 
+24: interface ReportSettingsData {
+25:   id: string;
+26:   report_type: ReportType;
+27:   template: 'classic' | 'modern' | 'minimal';
+28:   primary_color: string;
+29:   logo_urls: string[];
+30:   footer_logo_urls: string[];
+31:   header_text: string;
+32:   footer_text: string;
+33:   use_gemini_charts: boolean;
+34:   content_introduction_text?: string;
+35:   content_conclusion_text?: string;
+36:   content_recommendations_text?: string;
+37:   content_company_name?: string;
+38:   content_responsible_agent?: string;
+39:   content_show_introduction?: boolean;
+40:   content_show_conclusion?: boolean;
+41:   content_show_recommendations?: boolean;
+42:   section_order?: string[];
+43: }
+44: 
+45: const ReportSettings: React.FC = () => {
+46:   const navigate = useNavigate();
+47:   const { toast } = useToast();
+48:   const { startTutorial } = useTutorial();
+49: 
+50:   // Animation variants
+51:   const containerVariants: Variants = {
+52:     hidden: { opacity: 0 },
+53:     visible: {
+54:       opacity: 1,
+55:       transition: {
+56:         staggerChildren: 0.1,
+57:         delayChildren: 0.1
+58:       }
+59:     }
+60:   };
+61: 
+62:   const itemVariants: Variants = {
+63:     hidden: { y: 20, opacity: 0 },
+64:     visible: {
+65:       y: 0,
+66:       opacity: 1,
+67:       transition: { type: "spring", stiffness: 300, damping: 24 }
+68:     }
+69:   };
+70: 
+71:   const MotionDiv = motion.div;
+72: 
+73:   const [isAdmin, setIsAdmin] = React.useState(false);
+74:   const [loading, setLoading] = React.useState(true);
+75: 
+76:   React.useEffect(() => {
+77:     const completedTutorials = JSON.parse(localStorage.getItem('completedTutorials') || '[]');
+78:     if (!completedTutorials.includes('/admin/report-settings') && isAdmin) {
+79:       setTimeout(() => startTutorial(reportSettingsTutorial), 500);
+80:     }
+81:   }, [isAdmin, startTutorial]);
+82:   const [saving, setSaving] = React.useState(false);
+83:   const [hasUnsavedChanges, setHasUnsavedChanges] = React.useState(false);
+84:   const [savedSettingsSnapshot, setSavedSettingsSnapshot] = React.useState<string>('');
+85:   const [settings, setSettings] = React.useState<ReportSettingsData>({
+86:     id: "",
+87:     // Usar "prediccion" como tipo por defecto, que es el principal en el editor
+88:     report_type: 'prediccion',
+89:     template: 'modern',
+90:     primary_color: '#8EB8B5',
+91:     logo_urls: [],
+92:     footer_logo_urls: [],
+93:     header_text: "Reporte de EvaluaciÃ³n",
+94:     footer_text: "Generado por el Sistema de EvaluaciÃ³n Educativa",
+95:     use_gemini_charts: false,
+96:     content_introduction_text: '',
+97:     content_conclusion_text: '',
+98:     content_recommendations_text: '',
+99:     content_company_name: '',
+100:     content_responsible_agent: '',
+101:     content_show_introduction: true,
+102:     content_show_conclusion: true,
+103:     content_show_recommendations: true,
+104:     section_order: ['introduction', 'recommendations', 'conclusion']
+105:   });
+106:   const [pdfPreview, setPdfPreview] = React.useState<string | null>(null);
+107:   const [randomData, setRandomData] = useState<any[]>([]);
+108:   const [isFetchingData, setIsFetchingData] = useState(false);
+109: 
+110:   useEffect(() => {
+111:     fetchRandomData();
+112:   }, []);
+113: 
+114:   const fetchRandomData = async () => {
+115:     setIsFetchingData(true);
+116:     setPdfPreview(null);
+117:     try {
+118:       const { data: evals, error: eError } = await supabase
+119:         .from('evaluations')
+120:         .select(`
+121:           observations, 
+122:           test_1_observations,
+123:           test_2_observations,
+124:           recommendations:ai_results(recommendations), 
+125:           child:children(name)
+126:         `)
+127:         .not('observations', 'is', null)
+128:         .limit(20);
+129: 
+130:       if (eError) throw eError;
+131: 
+132:       // Shuffle the results to get different variety each time
+133:       const items = (evals || []).sort(() => Math.random() - 0.5);
+134:       setRandomData(items);
+135:     } catch (error) {
+136:       console.error("Error fetching random data:", error);
+137:     } finally {
+138:       setIsFetchingData(false);
+139:     }
+140:   };
+141: 
+142:   const getRandomValue = (sectionId: string): string => {
+143:     if (randomData.length === 0) return "Cargando datos aleatorios de ejemplo...";
+144: 
+145:     // Use a hash of sectionId to pick a stable-ish but unique entry from the pool
+146:     // This ensures that different sections likely get different students
+147:     const sectionHash = sectionId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+148:     const index = sectionHash % randomData.length;
+149:     const entry = randomData[index];
+150:     // Anonymize the name for the preview
+151:     const learnerName = "el aprendiente";
+152: 
+153:     if (sectionId === 'recomendaciones' || sectionId === 'recommendations') {
+154:       const recs = entry.recommendations?.[0]?.recommendations || entry.test_1_observations || entry.observations;
+155:       return `Sugerencias para **${learnerName}**:\n\n${recs || "Continuar con el proceso de fortalecimiento de habilidades motoras."}`;
+156:     }
+157: 
+158:     if (sectionId === 'estado_actual' || sectionId === 'introduction') {
+159:       return `El aprendiente presenta un nivel de desarrollo actual caracterizado por un desempeÃ±o promedio del 78% en las evaluaciones de motricidad fina realizadas durante el Ãºltimo trimestre. Se observa una velocidad de aprendizaje moderada-alta, con mejoras consistentes del 12% mensual en coordinaciÃ³n ojo-mano y precisiÃ³n manual.\n\nCompetencias Actuales:\nâ€¢ CoordinaciÃ³n Ojo-Mano: 82% - Nivel avanzado\nâ€¢ PrecisiÃ³n Manual: 75% - Nivel intermedio-avanzado\nâ€¢ Fuerza de Agarre: 71% - Nivel intermedio\nâ€¢ Control Visual-Motor: 84% - Nivel avanzado\n\nEl perfil de aprendizaje muestra predominancia visual-kinestÃ©sica, con mejor retenciÃ³n en actividades que combinan observaciÃ³n y manipulaciÃ³n directa. La curva de aprendizaje indica una fase de consolidaciÃ³n de habilidades bÃ¡sicas con potencial para avanzar a ejercicios de mayor complejidad.`;
+160:     }
+161: 
+162:     if (sectionId === 'areas_enfoque' || sectionId === 'proyecciones') {
+163:       return `ProyecciÃ³n estratÃ©gica para **${learnerName}**:\n\n${entry.test_2_observations || entry.observations}`;
+164:     }
+165: 
+166:     // For other sections, use observations or a variation
+167:     return `EvaluaciÃ³n de seguimiento (**${learnerName}**):\n\n${entry.observations}`;
+168:   };
+169: 
+170: 
+171: 
+172:   // Initialize sections - will be updated when settings load
+173:   const [reportSections, setReportSections] = React.useState<ReportSection[]>([
+174:     { id: 'introduction', title: 'IntroducciÃ³n', enabled: true },
+175:     { id: 'recommendations', title: 'Recomendaciones', enabled: true },
+176:     { id: 'conclusion', title: 'Conclusiones', enabled: true }
+177:   ]);
+178: 
+179:   React.useEffect(() => {
+180:     checkAdminAndFetchSettings();
+181:   }, []);
+182: 
+183:   React.useEffect(() => {
+184:     if (settings.template) {
+185:       generatePDFPreview();
+186:     }
+187:   }, [settings, randomData]);
+188: 
+189:   // Detect unsaved changes
+190:   React.useEffect(() => {
+191:     if (savedSettingsSnapshot) {
+192:       const currentSnapshot = JSON.stringify(settings);
+193:       setHasUnsavedChanges(currentSnapshot !== savedSettingsSnapshot);
+194:     }
+195:   }, [settings, savedSettingsSnapshot]);
+196: 
+197:   // Sync reportSections with settings - now works with any template
+198:   React.useEffect(() => {
+199:     const template = getReportTypeTemplate(settings.report_type);
+200:     if (!template || !template.custom_sections) return;
+201: 
+202:     const sectionOrder = settings.section_order || template.defaultConfig.section_order || [];
+203:     const updatedSections: ReportSection[] = sectionOrder
+204:       .map((id) => {
+205:         const customSection = template.custom_sections.find(s => s.id === id);
+206:         if (!customSection) return null;
+207: 
+208:         const showKey = `content_show_${id}`;
+209:         const enabled = (settings as any)[showKey] !== false; // Default to true
+210: 
+211:         return {
+212:           id: customSection.id,
+213:           title: customSection.title,
+214:           enabled
+215:         };
+216:       })
+217:       .filter((s): s is ReportSection => s !== null);
+218: 
+219:     // Only update if different to avoid infinite loops
+220:     if (JSON.stringify(updatedSections) !== JSON.stringify(reportSections)) {
+221:       setReportSections(updatedSections);
+222:     }
+223:   }, [settings.report_type, settings.section_order, settings]);
+224: 
+225:   // Update sections and settings when report type changes to use custom sections
+226:   React.useEffect(() => {
+227:     const template = getReportTypeTemplate(settings.report_type);
+228:     if (template && template.custom_sections) {
+229:       const sectionOrder = settings.section_order || template.defaultConfig.section_order || [];
+230: 
+231:       // Initialize sections from template
+232:       const updatedSections: ReportSection[] = sectionOrder
+233:         .map((id) => {
+234:           const customSection = template.custom_sections.find(s => s.id === id);
+235:           if (customSection) {
+236:             const showKey = `content_show_${id}`;
+237:             return {
+238:               id: customSection.id,
+239:               title: customSection.title,
+240:               enabled: (settings as any)[showKey] !== false // Use existing value or default to true
+241:             };
+242:           }
+243:           return null;
+244:         })
+245:         .filter((s): s is ReportSection => s !== null);
+246: 
+247:       // Initialize content fields from template defaults if not already set
+248:       const updatedSettings: any = { ...settings };
+249:       template.custom_sections.forEach(section => {
+250:         const contentKey = `content_${section.id}_text`;
+251:         const showKey = `content_show_${section.id}`;
+252: 
+253:         // Only set defaults if not already in settings
+254:         if (!(contentKey in updatedSettings)) {
+255:           updatedSettings[contentKey] = template.defaultConfig[contentKey] || '';
+256:         }
+257:         if (!(showKey in updatedSettings)) {
+258:           updatedSettings[showKey] = true;
+259:         }
+260:       });
+261: 
+262:       // Update section_order if not set
+263:       if (!updatedSettings.section_order || updatedSettings.section_order.length === 0) {
+264:         updatedSettings.section_order = sectionOrder;
+265:       }
+266: 
+267:       setSettings(updatedSettings);
+268: 
+269:       if (updatedSections.length > 0 && JSON.stringify(updatedSections) !== JSON.stringify(reportSections)) {
+270:         setReportSections(updatedSections);
+271:       }
+272:     }
+273:   }, [settings.report_type]);
+274: 
+275:   const checkAdminAndFetchSettings = async () => {
+276:     try {
+277:       const { data: { user } } = await supabase.auth.getUser();
+278: 
+279:       if (!user) {
+280:         navigate("/auth");
+281:         return;
+282:       }
+283: 
+284:       const { data: roleData } = await supabase
+285:         .from("user_roles")
+286:         .select("role")
+287:         .eq("user_id", user.id)
+288:         .eq("role", "admin")
+289:         .single();
+290: 
+291:       if (!roleData) {
+292:         toast({
+293:           title: "Acceso denegado",
+294:           description: "Solo los administradores pueden acceder a esta secciÃ³n",
+295:           variant: "destructive"
+296:         });
+297:         navigate("/dashboard");
+298:         return;
+299:       }
+300: 
+301:       setIsAdmin(true);
+302:       // Cargar configuraciÃ³n inicial desde la fila Ãºnica de report_settings
+303:       await fetchSettings();
+304:     } catch (error: any) {
+305:       console.error("Error checking admin status:", error);
+306:       navigate("/dashboard");
+307:     } finally {
+308:       setLoading(false);
+309:     }
+310:   };
+311: 
+312:   const fetchSettings = async (reportTypeOverride?: ReportType) => {
+313:     const targetType = reportTypeOverride || settings.report_type;
+314:     try {
+315:       const { data, error } = await supabase
+316:         .from("report_settings")
+317:         .select("*")
+318:         .eq("report_type", targetType)
+319:         .maybeSingle();
+320: 
+321:       if (error) throw error;
+322: 
+323:       const template = getReportTypeTemplate(targetType);
+324:       let settingsObj: any;
+325: 
+326:       if (data) {
+327:         const logoUrls = Array.isArray(data.logo_urls) ? data.logo_urls : [];
+328:         const footerLogoUrls = Array.isArray(data.footer_logo_urls) ? data.footer_logo_urls : [];
+329:         const reportType = (data.report_type || targetType) as ReportType;
+330: 
+331:         // Build settings object with all dynamic content fields
+332:         settingsObj = {
+333:           id: data.id,
+334:           report_type: reportType,
+335:           template: (data.template || template?.defaultConfig.template || 'modern') as 'classic' | 'modern' | 'minimal',
+336:           primary_color: data.primary_color || template?.defaultConfig.primary_color || '#8EB8B5',
+337:           logo_urls: logoUrls as string[],
+338:           footer_logo_urls: footerLogoUrls as string[],
+339:           header_text: data.header_text || template?.defaultConfig.header_text || "Reporte de EvaluaciÃ³n",
+340:           footer_text: data.footer_text || template?.defaultConfig.footer_text || "Generado por el Sistema de EvaluaciÃ³n Educativa",
+341:           use_gemini_charts: data.use_gemini_charts ?? false,
+342:           content_company_name: data.content_company_name || template?.defaultConfig.content_company_name || '',
+343:           content_responsible_agent: data.content_responsible_agent || template?.defaultConfig.content_responsible_agent || '',
+344:           section_order: data.section_order || template?.defaultConfig.section_order || []
+345:         };
+346: 
+347:         // Load dynamic content from JSONB field or individual columns
+348:         const dynamicContent = (data as any).dynamic_content || {};
+349:         if (template && template.custom_sections) {
+350:           template.custom_sections.forEach(section => {
+351:             const contentKey = `content_${section.id}_text`;
+352:             const showKey = `content_show_${section.id}`;
+353: 
+354:             // Try dynamic_content first, then individual column, then template default
+355:             settingsObj[contentKey] = dynamicContent[contentKey] ||
+356:               data[contentKey] ||
+357:               template.defaultConfig[contentKey] || '';
+358:             settingsObj[showKey] = dynamicContent[showKey] !== false &&
+359:               data[showKey] !== false; // Default to true if not set
+360:           });
+361:         }
+362:       } else {
+363:         // No data found for this type, initialize with template defaults
+364:         settingsObj = {
+365:           id: "",
+366:           report_type: targetType,
+367:           template: template?.defaultConfig.template || 'modern',
+368:           primary_color: template?.defaultConfig.primary_color || '#8EB8B5',
+369:           logo_urls: [],
+370:           footer_logo_urls: [],
+371:           header_text: template?.defaultConfig.header_text || "Reporte de EvaluaciÃ³n",
+372:           footer_text: template?.defaultConfig.footer_text || "Generado por el Sistema de EvaluaciÃ³n Educativa",
+373:           use_gemini_charts: false,
+374:           content_company_name: template?.defaultConfig.content_company_name || '',
+375:           content_responsible_agent: template?.defaultConfig.content_responsible_agent || '',
+376:           section_order: template?.defaultConfig.section_order || []
+377:         };
+378: 
+379:         // Add dynamic section defaults
+380:         if (template?.custom_sections) {
+381:           template.custom_sections.forEach(section => {
+382:             settingsObj[`content_${section.id}_text`] = template.defaultConfig[`content_${section.id}_text`] || '';
+383:             settingsObj[`content_show_${section.id}`] = true;
+384:           });
+385:         }
+386:       }
+387: 
+388:       setSettings(settingsObj);
+389:       // Save snapshot for change detection - use stringify to ensure we have a clean comparison
+390:       const snapshot = JSON.stringify(settingsObj);
+391:       setSavedSettingsSnapshot(snapshot);
+392:       setHasUnsavedChanges(false);
+393: 
+394:       // Update report sections from saved data using template
+395:       if (template && template.custom_sections) {
+396:         const sectionOrder = settingsObj.section_order || template.defaultConfig.section_order || [];
+397:         const updatedSections: ReportSection[] = sectionOrder
+398:           .map((id: string) => {
+399:             const customSection = template.custom_sections.find(s => s.id === id);
+400:             if (!customSection) return null;
+401: 
+402:             const showKey = `content_show_${id}`;
+403:             const enabled = settingsObj[showKey] !== false; // Default to true
+404: 
+405:             return {
+406:               id: customSection.id,
+407:               title: customSection.title,
+408:               enabled
+409:             };
+410:           })
+411:           .filter((s): s is ReportSection => s !== null);
+412: 
+413:         if (updatedSections.length > 0) {
+414:           setReportSections(updatedSections);
+415:         }
+416:       }
+417:     } catch (error: any) {
+418:       console.error("Error fetching settings:", error);
+419:       toast({
+420:         title: "Error",
+421:         description: "No se pudo cargar la configuraciÃ³n",
+422:         variant: "destructive"
+423:       });
+424:     }
+425:   };
+426: 
+427:   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+428:     const files = Array.from(e.target.files || []);
+429:     if (files.length === 0) return;
+430: 
+431:     const uploadedUrls: string[] = [];
+432: 
+433:     for (const file of files) {
+434:       if (!file.type.startsWith('image/')) continue;
+435:       if (file.size > 2 * 1024 * 1024) continue;
+436: 
+437:       const fileExt = file.name.split('.').pop();
+438:       const fileName = `logo_${Date.now()}_${Math.random()}.${fileExt}`;
+439: 
+440:       const { error: uploadError } = await supabase.storage
+441:         .from('report-logos')
+442:         .upload(fileName, file);
+443: 
+444:       if (uploadError) {
+445:         console.error('Error uploading logo:', uploadError);
+446:         continue;
+447:       }
+448: 
+449:       const { data: { publicUrl } } = supabase.storage
+450:         .from('report-logos')
+451:         .getPublicUrl(fileName);
+452: 
+453:       uploadedUrls.push(publicUrl);
+454:     }
+455: 
+456:     setSettings({
+457:       ...settings,
+458:       logo_urls: [...settings.logo_urls, ...uploadedUrls]
+459:     });
+460: 
+461:     toast({
+462:       title: "Ã‰xito",
+463:       description: `${uploadedUrls.length} logo(s) subido(s) correctamente`
+464:     });
+465:   };
+466: 
+467:   const handleDeleteLogo = async (index: number) => {
+468:     const logoUrl = settings.logo_urls[index];
+469:     const fileName = logoUrl.split('/').pop();
+470: 
+471:     if (fileName) {
+472:       await supabase.storage
+473:         .from('report-logos')
+474:         .remove([fileName]);
+475:     }
+476: 
+477:     setSettings({
+478:       ...settings,
+479:       logo_urls: settings.logo_urls.filter((_, i) => i !== index)
+480:     });
+481:   };
+482: 
+483:   const handleFooterLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+484:     const files = Array.from(e.target.files || []);
+485:     if (files.length === 0) return;
+486: 
+487:     const uploadedUrls: string[] = [];
+488: 
+489:     for (const file of files) {
+490:       if (!file.type.startsWith('image/')) continue;
+491:       if (file.size > 2 * 1024 * 1024) continue;
+492: 
+493:       const fileExt = file.name.split('.').pop();
+494:       const fileName = `footer_logo_${Date.now()}_${Math.random()}.${fileExt}`;
+495: 
+496:       const { error: uploadError } = await supabase.storage
+497:         .from('report-logos')
+498:         .upload(fileName, file);
+499: 
+500:       if (uploadError) {
+501:         console.error('Error uploading footer logo:', uploadError);
+502:         continue;
+503:       }
+504: 
+505:       const { data: { publicUrl } } = supabase.storage
+506:         .from('report-logos')
+507:         .getPublicUrl(fileName);
+508: 
+509:       uploadedUrls.push(publicUrl);
+510:     }
+511: 
+512:     setSettings({
+513:       ...settings,
+514:       footer_logo_urls: [...settings.footer_logo_urls, ...uploadedUrls]
+515:     });
+516: 
+517:     toast({
+518:       title: "Ã‰xito",
+519:       description: `${uploadedUrls.length} logo(s) de pie de pÃ¡gina subido(s) correctamente`
+520:     });
+521:   };
+522: 
+523:   const handleDeleteFooterLogo = async (index: number) => {
+524:     const logoUrl = settings.footer_logo_urls[index];
+525:     const fileName = logoUrl.split('/').pop();
+526: 
+527:     if (fileName) {
+528:       await supabase.storage
+529:         .from('report-logos')
+530:         .remove([fileName]);
+531:     }
+532: 
+533:     setSettings({
+534:       ...settings,
+535:       footer_logo_urls: settings.footer_logo_urls.filter((_, i) => i !== index)
+536:     });
+537:   };
+538: 
+539:   const handleSectionsChange = (newSections: ReportSection[]) => {
+540:     setReportSections(newSections);
+541: 
+542:     // Update settings with new order and visibility for all sections
+543:     const updatedSettings: any = {
+544:       ...settings,
+545:       section_order: newSections.map(s => s.id)
+546:     };
+547: 
+548:     // Update visibility flags for all sections dynamically
+549:     newSections.forEach(section => {
+550:       updatedSettings[`content_show_${section.id}`] = section.enabled;
+551:     });
+552: 
+553:     setSettings(updatedSettings);
+554:   };
+555: 
+556:   const handleSave = async () => {
+557:     setSaving(true);
+558: 
+559:     try {
+560:       const { data: { user } } = await supabase.auth.getUser();
+561:       if (!user) throw new Error("No user found");
+562: 
+563:       // Build upsert object with all dynamic content fields
+564:       const template = getReportTypeTemplate(settings.report_type);
+565:       const upsertData: any = {
+566:         id: settings.id || undefined,
+567:         report_type: settings.report_type,
+568:         template: settings.template,
+569:         primary_color: settings.primary_color,
+570:         logo_urls: settings.logo_urls,
+571:         footer_logo_urls: settings.footer_logo_urls,
+572:         header_text: settings.header_text,
+573:         footer_text: settings.footer_text,
+574:         use_gemini_charts: settings.use_gemini_charts,
+575:         content_company_name: settings.content_company_name,
+576:         content_responsible_agent: settings.content_responsible_agent,
+577:         section_order: settings.section_order,
+578:         updated_by: user.id,
+579:         updated_at: new Date().toISOString()
+580:       };
+581: 
+582:       // Build dynamic_content JSONB object with all dynamic fields
+583:       const dynamicContent: any = {};
+584:       if (template && template.custom_sections) {
+585:         template.custom_sections.forEach(section => {
+586:           const contentKey = `content_${section.id}_text`;
+587:           const showKey = `content_show_${section.id}`;
+588:           dynamicContent[contentKey] = (settings as any)[contentKey] || '';
+589:           dynamicContent[showKey] = (settings as any)[showKey] !== false;
+590:         });
+591:       }
+592: 
+593:       // Only add dynamic_content if it has content
+594:       if (Object.keys(dynamicContent).length > 0) {
+595:         upsertData.dynamic_content = dynamicContent;
+596:       }
+597: 
+598:       const { error } = await supabase
+599:         .from("report_settings")
+600:         .upsert(upsertData, { onConflict: 'report_type' });
+601: 
+602:       if (error) throw error;
+603: 
+604:       toast({
+605:         title: "Ã‰xito",
+606:         description: "ConfiguraciÃ³n guardada correctamente"
+607:       });
+608: 
+609:       await fetchSettings();
+610:       setHasUnsavedChanges(false);
+611:     } catch (error: any) {
+612:       console.error("Error saving settings:", error);
+613:       toast({
+614:         title: "Error",
+615:         description: error.message || "Error al guardar la configuraciÃ³n",
+616:         variant: "destructive"
+617:       });
+618:     } finally {
+619:       setSaving(false);
+620:     }
+621:   };
+622: 
+623:   const hexToRgb = (hex: string) => {
+624:     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+625:     return result ? {
+626:       r: parseInt(result[1], 16),
+627:       g: parseInt(result[2], 16),
+628:       b: parseInt(result[3], 16)
+629:     } : { r: 142, g: 184, b: 181 };
+630:   };
+631: 
+632:   const generateChartWithAI = async (prompt: string, chartData: any): Promise<string | null> => {
+633:     try {
+634:       const { data, error } = await supabase.functions.invoke('generate-chart-image', {
+635:         body: { prompt, chartData }
+636:       });
+637: 
+638:       if (error) {
+639:         console.error('Error generating chart with AI:', error);
+640:         return null;
+641:       }
+642: 
+643:       console.log('Chart generated with provider:', data?.provider);
+644: 
+645:       if (data?.imageBase64) {
+646:         return `data:${data.mimeType || 'image/png'};base64,${data.imageBase64}`;
+647:       }
+648: 
+649:       // If no image but text context, log it (could be used for local rendering later)
+650:       if (data?.textContext) {
+651:         console.log('Received text context for chart (no image):', data.textContext.substring(0, 200));
+652:       }
+653: 
+654:       return null;
+655:     } catch (error) {
+656:       console.error('Error calling AI chart API:', error);
+657:       return null;
+658:     }
+659:   };
+660: 
+661:   const generatePDFPreview = async () => {
+662:     // Clear previous
+663:     if (pdfPreview) URL.revokeObjectURL(pdfPreview);
+664:     setPdfPreview(null);
+665: 
+666:     try {
+667:       // Mock dimension scores based on report type for preview
+668:       let mockDimensionScores: Record<string, number> | undefined = undefined;
+669: 
+670:       if (settings.report_type === 'cornell') {
+671:         mockDimensionScores = { "OrganizaciÃ³n": 75, "Toma de Notas": 68, "GestiÃ³n del Tiempo": 72, "PreparaciÃ³n ExÃ¡menes": 80, "Lectura": 70 };
+672:       } else if (settings.report_type === 'chaea') {
+673:         mockDimensionScores = { "Activo": 12, "Reflexivo": 15, "TeÃ³rico": 14, "PragmÃ¡tico": 13 };
+674:       } else if (settings.report_type === 'tam') {
+675:         mockDimensionScores = { "Visual": 35, "Auditivo": 28, "KinestÃ©sico": 32 };
+676:       } else if (settings.report_type === 'motricidad') {
+677:         mockDimensionScores = { "PrecisiÃ³n": 85, "CoordinaciÃ³n": 78, "Fuerza": 72, "Control": 88 };
+678:       } else if (settings.report_type === 'competencias') {
+679:         mockDimensionScores = { "Motricidad": 80, "Estudio": 70, "Estilos": 75, "Modalidades": 85, "General": 78 };
+680:       } else if (settings.report_type === 'custom_questionnaire') {
+681:         mockDimensionScores = { "DimensiÃ³n 1": 80, "DimensiÃ³n 2": 65, "DimensiÃ³n 3": 90 };
+682:       }
+683: 
+684:       // Create mock report data from current settings and random/example data
+685:       const mockReportData = {
+686:         childName: "Adriana MarÃ­n Tovar",
+687:         age: "4 aÃ±os",
+688:         evaluatorName: settings.content_responsible_agent || "Evaluador Principal",
+689:         schoolName: settings.content_company_name || "InstituciÃ³n Educativa",
+690:         date: new Date().toLocaleDateString(),
+691:         reportType: settings.report_type,
+692:         dimensionScores: mockDimensionScores,
+693:         // Map settings to content structure expected by generator
+694:         content: {
+695:           introduction: (settings as any).content_introduction_text || getRandomValue('introduction'),
+696:           conclusion: (settings as any).content_conclusion_text || getRandomValue('conclusion'),
+697:           recommendations: (settings as any).content_recommendations_text || getRandomValue('recommendations')
+698:         },
+699:         // Add specific section content from settings if they exist
+700:         ...settings,
+701:         // Mock predictions for visual components
+702:         predictions: {
+703:           modelInfo: { algorithm: "Random Forest", confidence: 0.88, dataQuality: "Alta" },
+704:           overallProgress: {
+705:             currentLevel: "medio",
+706:             currentAverage: 78,
+707:             trend: "mejora",
+708:             learningVelocity: 12,
+709:             predictions: {
+710:               oneMonth: { expectedAverage: 82, confidenceInterval: [79, 85], likelihood: 0.85 },
+711:               threeMonths: { expectedAverage: 88, confidenceInterval: [85, 91], likelihood: 0.75 },
+712:               sixMonths: { expectedAverage: 94, confidenceInterval: [90, 98], likelihood: 0.65 }
+713:             }
+714:           },
+715:           activityPredictions: [
+716:             { activity: "Ensartado de Cuentas", currentScore: 75, trend: "mejora", predictions: { oneMonth: 82, threeMonths: 88, sixMonths: 94 }, improvementPotential: "alto", confidence: 0.9 },
+717:             { activity: "Recorte de Figuras", currentScore: 62, trend: "estable", predictions: { oneMonth: 65, threeMonths: 70, sixMonths: 78 }, improvementPotential: "medio", confidence: 0.85 },
+718:             { activity: "Trazo de LÃ­neas", currentScore: 80, trend: "mejora rÃ¡pida", predictions: { oneMonth: 88, threeMonths: 94, sixMonths: 98 }, improvementPotential: "bajo", confidence: 0.95 },
+719:             { activity: "Pinza Digital", currentScore: 58, trend: "deterioro leve", predictions: { oneMonth: 60, threeMonths: 65, sixMonths: 72 }, improvementPotential: "alto", confidence: 0.8 }
+720:           ],
+721:           riskFactors: ["Dificultad en manejo de tijeras (Agarre inconsistente)", "PrensiÃ³n dÃ©bil en mano izquierda", "Fatiga rÃ¡pida en actividades de precisiÃ³n (Necesita descansos frecuentes)"],
+722:           opportunities: ["InterÃ©s alto en actividades de construcciÃ³n con bloques", "Buena atenciÃ³n visual y seguimiento de instrucciones visuales", "MotivaciÃ³n por juegos de encaje y rompecabezas"],
+723:           recommendations: {
+724:             priority: "Alta Prioridad\n- Reforzar agarre de pinza con ejercicios de plastilina\n- Fomentar uso de tijeras con guÃ­a visual para mejorar la direcciÃ³n del corte\n\nPrioridad Media\n- Integrar juegos de construcciÃ³n cronometrados para mejorar velocidad\n- Practicar abotonado y cierre de cremalleras en prendas de vestir",
+725:             supportNeeded: "SupervisiÃ³n moderada constante durante actividades de recorte",
+726:             focusAreas: ["Motricidad Fina", "CoordinaciÃ³n Bilateral", "Control de Fuerza"]
+727:           }
+728:         }
+729:       };
+730: 
+731:       // Import dynamically to avoid huge bundle or circular deps if any
+732:       const { getReportPDFPreview } = await import('@/lib/ReportPDFGenerator');
+733: 
+734:       // Pass local settings so preview updates immediately
+735:       const blobUrl = await getReportPDFPreview(mockReportData as any, settings);
+736: 
+737:       setPdfPreview(blobUrl);
+738: 
+739:     } catch (error) {
+740:       console.error("Error generating PDF preview:", error);
+741:       toast({
+742:         title: "Error",
+743:         description: "No se pudo generar la vista previa del PDF",
+744:         variant: "destructive"
+745:       });
+746:     }
+747:   };
+748: 
+749:   const generatePDFPreviewOld = async () => {
+750:     setPdfPreview(null); // Clear previous preview
+751:     try {
+752:       const doc = new jsPDF();
+753:       const pageWidth = doc.internal.pageSize.getWidth();
+754:       const pageHeight = doc.internal.pageSize.getHeight();
+755:       const brandColor = hexToRgb(settings.primary_color);
+756: 
+757:       // Pre-load logo for header/footer
+758:       let headerLogoData: string | null = null;
+759:       if (settings.logo_urls && settings.logo_urls.length > 0) {
+760:         try {
+761:           headerLogoData = await loadImage(settings.logo_urls[0]);
+762:         } catch (e) {
+763:           console.error("Error pre-loading header logo:", e);
+764:         }
+765:       }
+766: 
+767:       // Helper to add header/footer to internal pages
+768:       const addPageDecorations = (pageNumber: number) => {
+769:         const yPosDecor = 12;
+770: 
+771:         if (settings.template === 'modern') {
+772:           // Modern Left Accent
+773:           doc.setFillColor(brandColor.r, brandColor.g, brandColor.b);
+774:           doc.rect(0, 0, 1.5, pageHeight, 'F');
+775: 
+776:           // Header Logo
+777:           if (headerLogoData) {
+778:             try {
+779:               doc.addImage(headerLogoData, 'PNG', 15, yPosDecor, 18, 11);
+780:             } catch (e) {
+781:               console.error("Error adding header logo to page:", e);
+782:             }
+783:           }
+784: 
+785:           // Header Text (brand name) - Modern style
+786:           doc.setFontSize(9);
+787:           doc.setTextColor(brandColor.r, brandColor.g, brandColor.b);
+788:           doc.setFont("helvetica", "bold");
+789:           doc.text(settings.content_company_name?.toUpperCase() || "SISTEMA EDUCATIVO", pageWidth - 15, yPosDecor + 6, { align: "right" });
+790: 
+791:           // Footer
+792:           doc.setDrawColor(brandColor.r, brandColor.g, brandColor.b, 0.2);
+793:           doc.setLineWidth(0.2);
+794:           doc.line(18, pageHeight - 20, pageWidth - 15, pageHeight - 20);
+795:           doc.setFontSize(8);
+796:           doc.setTextColor(150, 150, 150);
+797:           doc.setFont("helvetica", "normal");
+798:           doc.text(settings.footer_text || "Reporte Informativo", 18, pageHeight - 12);
+799:           doc.text("www.sistemaeducativo.com", pageWidth - 15, pageHeight - 12, { align: "right" });
+800: 
+801:           // Page Number badge - Modern Circle
+802:           doc.setFillColor(brandColor.r, brandColor.g, brandColor.b);
+803:           doc.circle(pageWidth / 2, pageHeight - 12, 4, 'F');
+804:           doc.setTextColor(255, 255, 255);
+805:           doc.setFontSize(8);
+806:           doc.text(`${pageNumber}`.padStart(2, '0'), pageWidth / 2, pageHeight - 11, { align: "center" });
+807:         } else if (settings.template === 'minimal') {
+808:           // Minimal style
+809:           doc.setFontSize(9);
+810:           doc.setTextColor(150, 150, 150);
+811:           doc.setFont("helvetica", "normal");
+812:           doc.text(`${pageNumber}`.padStart(2, '0'), pageWidth - 15, yPosDecor + 5, { align: "right" });
+813: 
+814:           if (headerLogoData) {
+815:             doc.addImage(headerLogoData, 'PNG', 15, yPosDecor, 15, 8);
+816:           }
+817: 
+818:           doc.setDrawColor(240, 240, 240);
+819:           doc.line(15, pageHeight - 20, pageWidth - 15, pageHeight - 20);
+820:           doc.text(settings.footer_text || "Reporte Informativo", 15, pageHeight - 12);
+821:         } else {
+822:           // Classic style (Standard)
+823:           if (headerLogoData) {
+824:             try {
+825:               doc.addImage(headerLogoData, 'PNG', 15, yPosDecor, 25, 15);
+826:             } catch (e) {
+827:               console.error("Error adding header logo to page:", e);
+828:             }
+829:           }
+830: 
+831:           doc.setFontSize(10);
+832:           doc.setTextColor(brandColor.r, brandColor.g, brandColor.b);
+833:           doc.setFont("helvetica", "bold");
+834:           doc.text(settings.content_company_name || "Sistema Educativo", pageWidth - 15, yPosDecor + 10, { align: "right" });
+835: 
+836:           doc.setDrawColor(brandColor.r, brandColor.g, brandColor.b);
+837:           doc.setLineWidth(0.5);
+838:           doc.line(15, yPosDecor + 18, pageWidth - 15, yPosDecor + 18);
+839: 
+840:           doc.line(15, pageHeight - 25, pageWidth - 15, pageHeight - 25);
+841:           doc.setFontSize(8);
+842:           doc.setTextColor(120, 120, 120);
+843:           doc.setFont("helvetica", "normal");
+844:           doc.text(settings.footer_text || "Reporte Informativo", 15, pageHeight - 15);
+845:           doc.text("www.sistemaeducativo.com", pageWidth - 15, pageHeight - 15, { align: "right" });
+846: 
+847:           doc.setFillColor(brandColor.r, brandColor.g, brandColor.b, 0.1);
+848:           doc.rect(pageWidth / 2 - 10, pageHeight - 15, 20, 10, 'F');
+849:           doc.setTextColor(brandColor.r, brandColor.g, brandColor.b);
+850:           doc.text(`${pageNumber}`, pageWidth / 2, pageHeight - 8, { align: "center" });
+851:         }
+852:       };
+853: 
+854:       // ===== PÃGINA 1: PORTADA =====
+855:       doc.setFillColor(255, 255, 255);
+856:       doc.rect(0, 0, pageWidth, pageHeight, 'F');
+857: 
+858:       if (settings.template === 'modern') {
+859:         doc.setFillColor(brandColor.r, brandColor.g, brandColor.b, 0.05);
+860:         doc.rect(0, pageHeight / 2, pageWidth, pageHeight / 2, 'F');
+861:       }
+862: 
+863:       let yPosP = 30;
+864:       if (settings.logo_urls.length > 0) {
+865:         const logoSize = 50;
+866:         const spacingP = 15;
+867:         const totalWidth = settings.logo_urls.length * logoSize + (settings.logo_urls.length - 1) * spacingP;
+868:         let xPosP = (pageWidth - totalWidth) / 2;
+869: 
+870:         for (const logoUrl of settings.logo_urls) {
+871:           try {
+872:             const img = await loadImage(logoUrl);
+873:             doc.addImage(img, 'PNG', xPosP, yPosP, logoSize, logoSize * 0.6);
+874:             xPosP += logoSize + spacingP;
+875:           } catch (error) {
+876:             console.error("Error loading logo:", error);
+877:           }
+878:         }
+879:         yPosP += 50;
+880:       }
+881: 
+882:       // Polished Cover Page Title Section
+883:       doc.setTextColor(brandColor.r, brandColor.g, brandColor.b);
+884:       doc.setFontSize(10);
+885:       doc.setFont("helvetica", "bold");
+886:       doc.text("DOCUMENTO OFICIAL", pageWidth / 2, yPosP, { align: "center", charSpace: 2 });
+887:       yPosP += 8;
+888: 
+889:       doc.setDrawColor(brandColor.r, brandColor.g, brandColor.b, 0.5);
+890:       doc.setLineWidth(0.8);
+891:       doc.line(pageWidth / 2 - 20, yPosP, pageWidth / 2 + 20, yPosP);
+892:       yPosP += 15;
+893: 
+894:       doc.setFontSize(34);
+895:       doc.setFont("helvetica", "bold");
+896:       doc.text("REPORTE DE", pageWidth / 2, yPosP, { align: "center" });
+897:       yPosP += 12;
+898:       doc.text("EVALUACIÃ“N", pageWidth / 2, yPosP, { align: "center" });
+899:       yPosP += 20;
+900: 
+901:       doc.setFontSize(14);
+902:       doc.setFont("helvetica", "italic");
+903:       doc.setTextColor(100, 100, 100);
+904:       const subTitleSplit = doc.splitTextToSize(settings.header_text, pageWidth - 60);
+905:       doc.text(subTitleSplit, pageWidth / 2, yPosP, { align: "center" });
+906:       yPosP += (subTitleSplit.length * 7) + 25;
+907: 
+908:       // Fecha en portada
+909:       doc.setTextColor(brandColor.r, brandColor.g, brandColor.b);
+910:       doc.setFontSize(14);
+911:       doc.setFont("helvetica", "bold");
+912:       const fechaPort = new Date().toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+913:       doc.text(fechaPort.toUpperCase(), pageWidth / 2, yPosP, { align: "center", charSpace: 1 });
+914:       yPosP += 15;
+915: 
+916:       // InformaciÃ³n del evaluador
+917:       doc.setFontSize(12);
+918:       doc.setTextColor(80, 80, 80);
+919:       doc.text("Evaluador: Sistema Educativo", pageWidth / 2, pageHeight - 30, { align: "center" });
+920:       doc.text("www.sistemaeducativo.com", pageWidth / 2, pageHeight - 20, { align: "center" });
+921: 
+922:       const writeTextWithBold = (text: string, x: number, y: number, maxWidth: number, fontSize: number): number => {
+923:         const parts = text.split(/(\*\*.*?\*\*)/g);
+924:         let currentX = x;
+925:         let currentY = y;
+926:         const lineHeight = fontSize * 0.5;
+927: 
+928:         parts.forEach((part) => {
+929:           if (part.startsWith('**') && part.endsWith('**')) {
+930:             doc.setFont("helvetica", "bold");
+931:             const boldText = part.slice(2, -2);
+932:             doc.text(boldText, currentX, currentY);
+933:             currentX += doc.getTextWidth(boldText);
+934:           } else {
+935:             doc.setFont("helvetica", "normal");
+936:             doc.text(part, currentX, currentY);
+937:             currentX += doc.getTextWidth(part);
+938:           }
+939:         });
+940: 
+941:         return currentY;
+942:       };
+943: 
+944:       // ===== SECCIONES DINÃMICAS =====
+945:       const templateP2 = getReportTypeTemplate(settings.report_type);
+946:       const sectionOrderP2 = settings.section_order || templateP2?.defaultConfig.section_order || [];
+947:       let currentPageP2 = 2;
+948: 
+949:       for (const sectionId of sectionOrderP2) {
+950:         const section = templateP2?.custom_sections.find(s => s.id === sectionId);
+951:         let sectionContent = (settings as any)[`content_${sectionId}_text`] || "";
+952:         const isEnabled = (settings as any)[`content_show_${sectionId}`] !== false;
+953: 
+954:         if (!section || !isEnabled) continue;
+955: 
+956:         // Use random data if requested (override content except for institutional info)
+957:         if (randomData.length > 0) {
+958:           sectionContent = getRandomValue(sectionId);
+959:         }
+960: 
+961:         // Start each new section on a fresh page
+962:         doc.addPage();
+963:         addPageDecorations(currentPageP2);
+964:         currentPageP2++;
+965: 
+966:         let yPosSect = 45;
+967: 
+968:         // Section Title
+969:         if (settings.template === 'modern') {
+970:           doc.setFillColor(brandColor.r, brandColor.g, brandColor.b);
+971:           doc.rect(15, yPosSect - 6, 12, 1.2, 'F');
+972:           doc.setFontSize(26);
+973:           doc.setFont("helvetica", "bold");
+974:           doc.setTextColor(brandColor.r, brandColor.g, brandColor.b);
+975:           doc.text(section.title, 15, yPosSect);
+976:           yPosSect += 15;
+977:         } else if (settings.template === 'minimal') {
+978:           doc.setFillColor(brandColor.r, brandColor.g, brandColor.b);
+979:           doc.rect(15, yPosSect - 2, 8, 0.5, 'F');
+980:           doc.setFontSize(24);
+981:           doc.setFont("helvetica", "normal");
+982:           doc.setTextColor(brandColor.r, brandColor.g, brandColor.b);
+983:           doc.text(section.title, 15, yPosSect);
+984:           yPosSect += 12;
+985:         } else {
+986:           doc.setFontSize(22);
+987:           doc.setFont("helvetica", "bold");
+988:           doc.setTextColor(brandColor.r, brandColor.g, brandColor.b);
+989:           doc.text(section.title.toUpperCase(), 15, yPosSect);
+990:           yPosSect += 15;
+991:         }
+992: 
+993:         // Section content with auto page breaking
+994:         doc.setFontSize(11);
+995:         doc.setFont("helvetica", "normal");
+996:         doc.setTextColor(40, 40, 40);
+997: 
+998:         if (sectionContent) {
+999:           sectionContent = (sectionContent as string).replace(/[\u0000-\u0008\u000B-\u000C\u000E-\u001F\u007F-\u009F]/g, "");
+1000:           const xOffset = settings.template === 'modern' ? 18 : 15;
+1001:           const lines = doc.splitTextToSize(sectionContent, pageWidth - (xOffset + 15));
+1002: 
+1003:           for (const line of lines) {
+1004:             if (yPosSect > pageHeight - 35) {
+1005:               doc.addPage();
+1006:               addPageDecorations(currentPageP2);
+1007:               currentPageP2++;
+1008:               yPosSect = 45;
+1009:               doc.setFont("helvetica", "normal");
+1010:               doc.setFontSize(11);
+1011:               doc.setTextColor(40, 40, 40);
+1012:             }
+1013: 
+1014:             if (line.includes('**')) {
+1015:               const parts = line.split(/(\*\*.*?\*\*)/g);
+1016:               let localX = xOffset;
+1017:               parts.forEach(part => {
+1018:                 if (part.startsWith('**') && part.endsWith('**')) {
+1019:                   doc.setFont("helvetica", "bold");
+1020:                   const cleanPart = part.slice(2, -2);
+1021:                   doc.text(cleanPart, localX, yPosSect);
+1022:                   localX += doc.getTextWidth(cleanPart);
+1023:                 } else {
+1024:                   doc.setFont("helvetica", "normal");
+1025:                   doc.text(part, localX, yPosSect);
+1026:                   localX += doc.getTextWidth(part);
+1027:                 }
+1028:               });
+1029:             } else {
+1030:               doc.setFont("helvetica", "normal");
+1031:               doc.text(line, xOffset, yPosSect);
+1032:             }
+1033:             yPosSect += 7;
+1034:           }
+1035:           yPosSect += 5;
+1036:         }
+1037: 
+1038: 
+1039:         // === CUSTOM VISUAL RENDERER FOR 'ESTADO_ACTUAL' ===
+1040:         if (sectionId === 'estado_actual' || sectionId === 'introduction') {
+1041:           // We want to render the rich content with some graphical elements (progress bars for competencies)
+1042:           // The text is long, so let's parse it or render it manually to inject the bars.
+1043: 
+1044:           // 1. Render Intro Paragraph
+1045:           const introText = "El aprendiente presenta un nivel de desarrollo actual caracterizado por un desempeÃ±o promedio del 78% en las evaluaciones de motricidad fina realizadas durante el Ãºltimo trimestre. Se observa una velocidad de aprendizaje moderada-alta, con mejoras consistentes del 12% mensual en coordinaciÃ³n ojo-mano y precisiÃ³n manual.";
+1046: 
+1047:           doc.setFontSize(10);
+1048:           doc.setFont("helvetica", "normal");
+1049:           doc.setTextColor(60, 60, 60);
+1050:           const splitIntro = doc.splitTextToSize(introText, pageWidth - 35);
+1051:           doc.text(splitIntro, settings.template === 'modern' ? 18 : 15, yPosSect);
+1052:           yPosSect += (splitIntro.length * 6) + 10;
+1053: 
+1054:           // 2. Render Competencies Chart
+1055:           const competencies = [
+1056:             { name: "CoordinaciÃ³n Ojo-Mano", value: 82, level: "Avanzado" },
+1057:             { name: "PrecisiÃ³n Manual", value: 75, level: "Intermedio-Avanzado" },
+1058:             { name: "Fuerza de Agarre", value: 71, level: "Intermedio" },
+1059:             { name: "Control Visual-Motor", value: 84, level: "Avanzado" }
+1060:           ];
+1061: 
+1062:           doc.setFontSize(11);
+1063:           doc.setFont("helvetica", "bold");
+1064:           doc.setTextColor(settings.template === 'modern' ? brandColor.r : 0, settings.template === 'modern' ? brandColor.g : 0, settings.template === 'modern' ? brandColor.b : 0);
+1065:           doc.text("Competencias Actuales", settings.template === 'modern' ? 18 : 15, yPosSect);
+1066:           yPosSect += 8;
+1067: 
+1068:           competencies.forEach(comp => {
+1069:             const xStart = settings.template === 'modern' ? 18 : 15;
+1070:             const barWidth = 100; // Max width of bar
+1071:             const barHeight = 4;
+1072: 
+1073:             // Label
+1074:             doc.setFontSize(9);
+1075:             doc.setFont("helvetica", "medium");
+1076:             doc.setTextColor(80, 80, 80);
+1077:             doc.text(comp.name, xStart, yPosSect);
+1078: 
+1079:             // Value text
+1080:             doc.setFont("helvetica", "bold");
+1081:             doc.text(`${comp.value}%`, xStart + 110, yPosSect);
+1082: 
+1083:             // Level text
+1084:             doc.setFont("helvetica", "normal");
+1085:             doc.setTextColor(120, 120, 120);
+1086:             doc.setFontSize(8);
+1087:             doc.text(`- ${comp.level}`, xStart + 125, yPosSect);
+1088: 
+1089:             yPosSect += 3;
+1090: 
+1091:             // Background Bar
+1092:             doc.setFillColor(230, 230, 230);
+1093:             doc.roundedRect(xStart, yPosSect, barWidth, barHeight, 1, 1, 'F');
+1094: 
+1095:             // Value Bar
+1096:             doc.setFillColor(brandColor.r, brandColor.g, brandColor.b); // Use brand color
+1097:             doc.roundedRect(xStart, yPosSect, (comp.value / 100) * barWidth, barHeight, 1, 1, 'F');
+1098: 
+1099:             yPosSect += 10;
+1100:           });
+1101: 
+1102:           yPosSect += 5;
+1103: 
+1104:           // 3. Render Conclusion Paragraph
+1105:           const conclusionText = "El perfil de aprendizaje muestra predominancia visual-kinestÃ©sica, con mejor retenciÃ³n en actividades que combinan observaciÃ³n y manipulaciÃ³n directa. La curva de aprendizaje indica una fase de consolidaciÃ³n de habilidades bÃ¡sicas con potencial para avanzar a ejercicios de mayor complejidad.";
+1106: 
+1107:           doc.setFontSize(10);
+1108:           doc.setFont("helvetica", "normal");
+1109:           doc.setTextColor(60, 60, 60);
+1110:           const splitConclusion = doc.splitTextToSize(conclusionText, pageWidth - 35);
+1111: 
+1112:           // Check if we need new page
+1113:           if (yPosSect + (splitConclusion.length * 6) > pageHeight - 20) {
+1114:             doc.addPage();
+1115:             addPageDecorations(currentPageP2);
+1116:             currentPageP2++;
+1117:             yPosSect = 40;
+1118:           }
+1119: 
+1120:           doc.text(splitConclusion, settings.template === 'modern' ? 18 : 15, yPosSect);
+1121:           yPosSect += (splitConclusion.length * 6) + 10;
+1122: 
+1123:           // Prevent standard text rendering
+1124:           sectionContent = "";
+1125:         }
+1126: 
+1127: 
+1128:         // === CUSTOM VISUAL RENDERER FOR 'PROYECCIONES' ===
+1129:         if (sectionId === 'proyecciones' || sectionId === 'prediccion_avanzada') {
+1130:           // If we have content, render it first
+1131:           if (sectionContent) {
+1132:             // ... logic to render text context if needed, but user wants visual "instead of" or "in addition to"
+1133:             // Let's render a small intro text if available, then the cards.
+1134:           }
+1135: 
+1136:           // Mock Data for "Activity Cards" visual
+1137:           const activities = [
+1138:             { name: "Juego de Pesca", current: 3, status: "estable", potential: "medio", p1: 3.0, p3: 3.1, p6: 3.1, progress: 0.9 },
+1139:             { name: "Pesca con imÃ¡n", current: 2, status: "mejora", potential: "alto", p1: 2.5, p3: 3.8, p6: 4.5, progress: 0.6 },
+1140:             { name: "CoordinaciÃ³n", current: 4, status: "estable", potential: "bajo", p1: 4.0, p3: 4.1, p6: 4.2, progress: 0.95 }
+1141:           ];
+1142: 
+1143:           let currentY = yPosSect + 5;
+1144: 
+1145:           // Define card colors - Dark UI theme usually, but for print we use clean borders
+1146:           // User asked "como se ve en la interfaz" which is likely the dark cards.
+1147:           // We will simulate a "Light Mode" version of the UI card for better printing, 
+1148:           // but keep the layout exactly as requested.
+1149: 
+1150:           activities.forEach((act) => {
+1151:             // Check page break for card (approx height 45)
+1152:             if (currentY + 50 > pageHeight - 20) {
+1153:               doc.addPage();
+1154:               addPageDecorations(currentPageP2);
+1155:               currentPageP2++;
+1156:               currentY = 45;
+1157:             }
+1158: 
+1159:             // Card Background
+1160:             doc.setDrawColor(220, 220, 230);
+1161:             doc.setFillColor(248, 250, 252); // Very light slate
+1162:             doc.roundedRect(15, currentY, pageWidth - 30, 42, 3, 3, 'FD');
+1163: 
+1164:             // Title Row
+1165:             doc.setFontSize(12);
+1166:             doc.setFont("helvetica", "bold");
+1167:             doc.setTextColor(30, 41, 59); // Slate 800
+1168:             doc.text(act.name, 20, currentY + 10);
+1169: 
+1170:             // Potential Badge (Right aligned)
+1171:             const potText = `Potencial: ${act.potential}`;
+1172:             doc.setFontSize(8);
+1173:             doc.setTextColor(255, 255, 255);
+1174:             const badgeWidth = doc.getTextWidth(potText) + 6;
+1175:             doc.setFillColor(59, 130, 246); // Blue 500
+1176:             doc.roundedRect(pageWidth - 20 - badgeWidth, currentY + 6, badgeWidth, 6, 2, 2, 'F');
+1177:             doc.text(potText, pageWidth - 20 - badgeWidth + 3, currentY + 10);
+1178: 
+1179:             // Current & Status Badge
+1180:             doc.setFontSize(9);
+1181:             doc.setTextColor(100, 116, 139);
+1182:             doc.setFont("helvetica", "normal");
+1183:             doc.text(`Actual: ${act.current}`, 20, currentY + 18);
+1184: 
+1185:             const statusText = act.status;
+1186:             doc.setFontSize(8);
+1187:             const statusWidth = doc.getTextWidth(statusText) + 6;
+1188: 
+1189:             // Status badge color
+1190:             if (act.status === 'estable') doc.setFillColor(234, 179, 8); // Yellow 500
+1191:             else if (act.status === 'mejora') doc.setFillColor(34, 197, 94); // Green 500
+1192:             else doc.setFillColor(100, 116, 139); // Slate 500
+1193: 
+1194:             doc.roundedRect(20 + 15 + 5, currentY + 14, statusWidth, 5, 2, 2, 'F'); // x relative to "Actual: 3"
+1195:             doc.setTextColor(255, 255, 255);
+1196:             doc.text(statusText, 20 + 15 + 8, currentY + 17.5);
+1197: 
+1198:             // Data Grid Box (Darker background for data)
+1199:             const gridY = currentY + 22;
+1200:             const gridHeight = 12;
+1201:             doc.setFillColor(30, 41, 59); // Slate 800 (Dark background like screenshot)
+1202:             doc.roundedRect(20, gridY, pageWidth - 40, gridHeight, 2, 2, 'F');
+1203: 
+1204:             // Grid Columns (1 mes, 3 meses, 6 meses)
+1205:             doc.setTextColor(148, 163, 184); // Slate 400
+1206:             doc.setFontSize(7);
+1207:             const colWidth = (pageWidth - 40) / 3;
+1208: 
+1209:             // Col 1
+1210:             doc.text("1 mes", 20 + colWidth * 0.5, gridY + 4, { align: 'center' });
+1211:             doc.setFontSize(9);
+1212:             doc.setTextColor(255, 255, 255);
+1213:             doc.setFont("helvetica", "bold");
+1214:             doc.text(`${act.p1}`, 20 + colWidth * 0.5, gridY + 9, { align: 'center' });
+1215: 
+1216:             // Col 2
+1217:             doc.setFont("helvetica", "normal");
+1218:             doc.setTextColor(148, 163, 184);
+1219:             doc.setFontSize(7);
+1220:             doc.text("3 meses", 20 + colWidth * 1.5, gridY + 4, { align: 'center' });
+1221:             doc.setFontSize(9);
+1222:             doc.setTextColor(255, 255, 255);
+1223:             doc.setFont("helvetica", "bold");
+1224:             doc.text(`${act.p3}`, 20 + colWidth * 1.5, gridY + 9, { align: 'center' });
+1225: 
+1226:             // Col 3
+1227:             doc.setFont("helvetica", "normal");
+1228:             doc.setTextColor(148, 163, 184);
+1229:             doc.setFontSize(7);
+1230:             doc.text("6 meses", 20 + colWidth * 2.5, gridY + 4, { align: 'center' });
+1231:             doc.setFontSize(9);
+1232:             doc.setTextColor(255, 255, 255);
+1233:             doc.setFont("helvetica", "bold");
+1234:             doc.text(`${act.p6}`, 20 + colWidth * 2.5, gridY + 9, { align: 'center' });
+1235: 
+1236:             // Progress Bar
+1237:             const barY = gridY + gridHeight + 4; // Below grid
+1238:             doc.setDrawColor(59, 130, 246); // Blue outline
+1239:             doc.setLineWidth(0.5);
+1240:             doc.line(20, barY, pageWidth - 20, barY); // Base line
+1241: 
+1242:             // Progress fill
+1243:             doc.setDrawColor(34, 197, 94); // Green progress
+1244:             doc.setLineWidth(1.5);
+1245:             doc.line(20, barY, 20 + ((pageWidth - 40) * act.progress), barY);
+1246: 
+1247:             currentY += 48; // Card height + spacing
+1248:           });
+1249: 
+1250:           // Update yPosSect for next steps
+1251:           yPosSect = currentY;
+1252: 
+1253:           // Skip standard text rendering if we just did the visual cards?
+1254:           // Or allow text to appear after?
+1255:           // Let's mark sectionId as handled if we don't want standard text. 
+1256:           // But the loop below handles text logic if sectionContent exists.
+1257:           // We can clear sectionContent to prevent duplication or use it as intro.
+1258:           sectionContent = ""; // Prevent standard text rendering for this section to avoid clutter
+1259:         }
+1260: 
+1261:         // Handle Chart generation
+1262:         const chartSects = ['resultados', 'perfil_estilos', 'modalidades', 'analisis_integral', 'analisis_habitos', 'estado_actual', 'areas_enfoque'];
+1263:         if (chartSects.includes(sectionId) && settings.use_gemini_charts) {
+1264:           const cData = { title: section.title, labels: ['Nivel 1', 'Nivel 2', 'Nivel 3'], values: [85, 70, 95], type: sectionId === 'proyecciones' ? 'line' : 'bar' };
+1265:           const cPrompt = `GrÃ¡fico de ${section.title}. Color: ${settings.primary_color}`;
+1266:           const cImage = await generateChartWithAI(cPrompt, cData);
+1267:           if (cImage) {
+1268:             try {
+1269:               if (yPosSect + 85 > pageHeight - 35) {
+1270:                 doc.addPage();
+1271:                 addPageDecorations(currentPageP2);
+1272:                 currentPageP2++;
+1273:                 yPosSect = 45;
+1274:               }
+1275:               const xOffset = settings.template === 'modern' ? 18 : 15;
+1276:               doc.addImage(cImage, 'PNG', xOffset, yPosSect, pageWidth - (xOffset + 15), 75);
+1277:               yPosSect += 85;
+1278:             } catch (e) {
+1279:               console.error("Error adding chart image:", e);
+1280:             }
+1281:           }
+1282:         }
+1283:       }
+1284:       const pBlob = doc.output('blob');
+1285:       const pUrl = URL.createObjectURL(pBlob);
+1286:       if (pdfPreview) URL.revokeObjectURL(pdfPreview);
+1287:       setPdfPreview(pUrl);
+1288:     } catch (error) {
+1289:       console.error("Error generating preview:", error);
+1290:     }
+1291:   };
+1292: 
+1293:   const loadImage = (url: string): Promise<string> => {
+1294:     return new Promise((resolve, reject) => {
+1295:       const img = new Image();
+1296:       img.crossOrigin = 'anonymous';
+1297:       img.onload = () => {
+1298:         const canvas = document.createElement('canvas');
+1299:         canvas.width = img.width;
+1300:         canvas.height = img.height;
+1301:         const ctx = canvas.getContext('2d');
+1302:         if (!ctx) {
+1303:           reject(new Error('Could not get canvas context'));
+1304:           return;
+1305:         }
+1306:         ctx.drawImage(img, 0, 0);
+1307:         resolve(canvas.toDataURL('image/png'));
+1308:       };
+1309:       img.onerror = reject;
+1310:       img.src = url;
+1311:     });
+1312:   };
+1313: 
+1314:   if (loading || !isAdmin) {
+1315:     return null;
+1316:   }
+1317: 
+1318:   return (
+1319:     <div className="min-h-screen bg-background">
+1320:       <header className="border-b bg-card sticky top-0 z-30">
+1321:         <MotionDiv
+1322:           initial={{ y: -20, opacity: 0 }}
+1323:           animate={{ y: 0, opacity: 1 }}
+1324:           transition={{ duration: 0.4 }}
+1325:           className="container mx-auto px-4 py-4 flex items-center justify-between"
+1326:         >
+1327:           <div className="flex items-center gap-4">
+1328:             <Button
+1329:               variant="outline"
+1330:               onClick={() => navigate("/dashboard")}
+1331:               className="bg-white/10 hover:bg-white/20 hover:text-primary transition-all gap-2"
+1332:             >
+1333:               <ArrowLeft className="h-4 w-4" />
+1334:               <span className="hidden sm:inline">Volver al Panel</span>
+1335:             </Button>
+1336:             <div className="flex items-center gap-3">
+1337:               <div className="p-2 rounded-lg bg-primary/10">
+1338:                 <Settings className="h-6 w-6 text-primary" />
+1339:               </div>
+1340:               <h1 className="text-2xl font-bold text-foreground">Editor de PDF y Reportes</h1>
+1341:             </div>
+1342:           </div>
+1343:           <div className="flex items-center gap-2">
+1344:             <Button
+1345:               onClick={handleSave}
+1346:               disabled={saving}
+1347:               className={`transition-all gap-2 relative ${hasUnsavedChanges ? 'bg-amber-600 hover:bg-amber-700' : 'bg-primary hover:bg-primary/90'}`}
+1348:               data-tutorial="save-settings-btn"
+1349:               title={hasUnsavedChanges ? "Tienes cambios sin guardar" : "Sin cambios pendientes"}
+1350:             >
+1351:               {hasUnsavedChanges && (
+1352:                 <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full animate-pulse" />
+1353:               )}
+1354:               <Save className="h-4 w-4" />
+1355:               <span className="hidden sm:inline">{saving ? "Guardando..." : hasUnsavedChanges ? "Â¡Guardar Cambios!" : "Guardado"}</span>
+1356:             </Button>
+1357:           </div>
+1358:         </MotionDiv>
+1359:       </header>
+1360: 
+1361:       <main className="container mx-auto px-4 py-8">
+1362:         <MotionDiv
+1363:           variants={containerVariants}
+1364:           initial="hidden"
+1365:           animate="visible"
+1366:           className="grid grid-cols-1 lg:grid-cols-12 gap-8"
+1367:         >
+1368:           {/* Left Column: Editor Controls */}
+1369:           <MotionDiv variants={itemVariants} className="lg:col-span-5 space-y-6">
+1370:             <Card className="p-6">
+1371:               {/* Header */}
+1372:               <div className="flex items-center gap-3 pb-4 border-b">
+1373:                 <div className="p-2 bg-primary/10 rounded-lg">
+1374:                   <Settings className="h-5 w-5 text-primary" />
+1375:                 </div>
+1376:                 <h2 className="text-lg font-semibold">ConfiguraciÃ³n</h2>
+1377:               </div>
+1378: 
+1379: 
+1380:               {/* AI Debugger - MOVED TO PROFILE (Admin Only) */}
+1381:               {/* <OpenRouterConfig /> */}
+1382: 
+1383:               {/* Template Selection */}
+1384:               <div className="space-y-3" data-tutorial="template-selector">
+1385:                 <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+1386:                   PLANTILLA
+1387:                 </Label>
+1388:                 <div className="grid grid-cols-3 gap-2">
+1389:                   <button
+1390:                     onClick={() => setSettings({ ...settings, template: 'classic' })}
+1391:                     className={`p-4 border-2 rounded-lg transition-all ${settings.template === 'classic'
+1392:                       ? 'border-primary bg-primary/5'
+1393:                       : 'border-border hover:border-primary/50'
+1394:                       }`}
+1395:                   >
+1396:                     <div className="w-full h-16 bg-muted rounded mb-2 flex items-center justify-center">
+1397:                       <FileText className="w-8 h-8 text-muted-foreground/30" />
+1398:                     </div>
+1399:                     <p className="text-xs font-bold text-center">ClÃ¡sica (EstÃ¡ndar)</p>
+1400:                   </button>
+1401:                   <button
+1402:                     onClick={() => setSettings({ ...settings, template: 'modern' })}
+1403:                     className={`p-4 border-2 rounded-lg transition-all ${settings.template === 'modern'
+1404:                       ? 'border-primary bg-primary/5'
+1405:                       : 'border-border hover:border-primary/50'
+1406:                       }`}
+1407:                   >
+1408:                     <div className="w-full h-16 bg-primary/20 rounded mb-2 flex items-center justify-center">
+1409:                       <Brain className="w-8 h-8 text-primary/40" />
+1410:                     </div>
+1411:                     <p className="text-xs font-bold text-center">Moderna (IntegraciÃ³n IA)</p>
+1412:                   </button>
+1413:                   <button
+1414:                     onClick={() => setSettings({ ...settings, template: 'minimal' })}
+1415:                     className={`p-4 border-2 rounded-lg transition-all ${settings.template === 'minimal'
+1416:                       ? 'border-primary bg-primary/5'
+1417:                       : 'border-border hover:border-primary/50'
+1418:                       }`}
+1419:                   >
+1420:                     <div className="w-full h-16 border-2 border-dashed border-muted rounded mb-2 flex items-center justify-center">
+1421:                       <Laptop className="w-8 h-8 text-muted-foreground/20" />
+1422:                     </div>
+1423:                     <p className="text-xs font-bold text-center">Minimalista</p>
+1424:                   </button>
+1425:                 </div>
+1426:               </div>
+1427: 
+1428:               {/* Branding */}
+1429:               <div className="space-y-4">
+1430:                 <div className="flex items-center gap-2">
+1431:                   <div className="p-1.5 bg-primary/10 rounded">
+1432:                     <div className="h-4 w-4 rounded-full" style={{ backgroundColor: settings.primary_color }} />
+1433:                   </div>
+1434:                   <h3 className="font-medium">Branding Corporativo</h3>
+1435:                 </div>
+1436: 
+1437:                 {/* Color Picker */}
+1438:                 <div className="space-y-2" data-tutorial="color-picker">
+1439:                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+1440:                     COLOR DE MARCA
+1441:                   </Label>
+1442:                   <div className="flex items-center gap-3">
+1443:                     <div
+1444:                       className="w-12 h-12 rounded-lg border-2 border-border cursor-pointer"
+1445:                       style={{ backgroundColor: settings.primary_color }}
+1446:                       onClick={() => document.getElementById('color-picker')?.click()}
+1447:                     />
+1448:                     <div className="flex-1">
+1449:                       <Input
+1450:                         id="color-picker"
+1451:                         type="color"
+1452:                         value={settings.primary_color}
+1453:                         onChange={(e) => setSettings({ ...settings, primary_color: e.target.value })}
+1454:                         className="hidden"
+1455:                       />
+1456:                       <Input
+1457:                         type="text"
+1458:                         value={settings.primary_color.toUpperCase()}
+1459:                         onChange={(e) => setSettings({ ...settings, primary_color: e.target.value })}
+1460:                         className="font-mono text-sm"
+1461:                         placeholder="#8EB8B5"
+1462:                       />
+1463:                     </div>
+1464:                   </div>
+1465:                 </div>
+1466: 
+1467:                 {/* Logos Header */}
+1468:                 <div className="space-y-3" data-tutorial="logo-upload">
+1469:                   <div className="flex items-center justify-between">
+1470:                     <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+1471:                       LOGOTIPOS (PORTADA)
+1472:                     </Label>
+1473:                     <span className="text-xs text-muted-foreground">
+1474:                       {settings.logo_urls.length} guardados
+1475:                     </span>
+1476:                   </div>
+1477: 
+1478:                   {/* Logo Grid */}
+1479:                   {settings.logo_urls.length > 0 && (
+1480:                     <div className="grid grid-cols-3 gap-2">
+1481:                       {settings.logo_urls.map((url, index) => (
+1482:                         <div
+1483:                           key={index}
+1484:                           className="relative group aspect-square border-2 border-primary/20 rounded-lg overflow-hidden bg-card p-2"
+1485:                         >
+1486:                           <img
+1487:                             src={url}
+1488:                             alt={`Logo ${index + 1}`}
+1489:                             className="w-full h-full object-contain"
+1490:                           />
+1491:                           <button
+1492:                             onClick={() => handleDeleteLogo(index)}
+1493:                             className="absolute inset-0 bg-destructive/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+1494:                           >
+1495:                             <Trash2 className="h-4 w-4 text-destructive-foreground" />
+1496:                           </button>
+1497:                         </div>
+1498:                       ))}
+1499:                     </div>
+1500:                   )}
+1501: 
+1502:                   {/* Upload Button */}
+1503:                   <label className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-primary/30 rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+1504:                     <Upload className="h-4 w-4 text-primary" />
+1505:                     <span className="text-sm font-medium text-primary">Subir logo portada</span>
+1506:                     <Input
+1507:                       type="file"
+1508:                       accept="image/*"
+1509:                       multiple
+1510:                       onChange={handleLogoUpload}
+1511:                       className="hidden"
+1512:                     />
+1513:                   </label>
+1514:                   <p className="text-xs text-muted-foreground">
+1515:                     Aparecen en portada. MÃ¡x: 2MB
+1516:                   </p>
+1517:                 </div>
+1518: 
+1519:                 {/* Gemini Charts Toggle */}
+1520:                 <div className="space-y-3 pt-4 border-t">
+1521:                   <div className="flex items-center justify-between">
+1522:                     <div>
+1523:                       <Label className="text-sm font-medium">GrÃ¡ficos con IA</Label>
+1524:                       <p className="text-xs text-muted-foreground mt-1">
+1525:                         Generar grÃ¡ficos usando el proveedor de IA activo en tu perfil
+1526:                       </p>
+1527:                     </div>
+1528:                     <label className="relative inline-flex items-center cursor-pointer">
+1529:                       <input
+1530:                         type="checkbox"
+1531:                         checked={settings.use_gemini_charts}
+1532:                         onChange={(e) => setSettings({ ...settings, use_gemini_charts: e.target.checked })}
+1533:                         className="sr-only peer"
+1534:                       />
+1535:                       <div className="w-11 h-6 bg-muted peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+1536:                     </label>
+1537:                   </div>
+1538:                 </div>
+1539: 
+1540:                 {/* Logos Footer */}
+1541:                 <div className="space-y-3 pt-4 border-t" data-tutorial="footer-logo-upload">
+1542:                   <div className="flex items-center justify-between">
+1543:                     <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+1544:                       LOGOTIPOS (PIE DE PÃGINA)
+1545:                     </Label>
+1546:                     <span className="text-xs text-muted-foreground">
+1547:                       {settings.footer_logo_urls.length} guardados
+1548:                     </span>
+1549:                   </div>
+1550: 
+1551:                   {/* Footer Logo Grid */}
+1552:                   {settings.footer_logo_urls.length > 0 && (
+1553:                     <div className="grid grid-cols-3 gap-2">
+1554:                       {settings.footer_logo_urls.map((url, index) => (
+1555:                         <div
+1556:                           key={index}
+1557:                           className="relative group aspect-square border-2 border-primary/20 rounded-lg overflow-hidden bg-card p-2"
+1558:                         >
+1559:                           <img
+1560:                             src={url}
+1561:                             alt={`Footer Logo ${index + 1}`}
+1562:                             className="w-full h-full object-contain"
+1563:                           />
+1564:                           <button
+1565:                             onClick={() => handleDeleteFooterLogo(index)}
+1566:                             className="absolute inset-0 bg-destructive/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+1567:                           >
+1568:                             <Trash2 className="h-4 w-4 text-destructive-foreground" />
+1569:                           </button>
+1570:                         </div>
+1571:                       ))}
+1572:                     </div>
+1573:                   )}
+1574: 
+1575:                   {/* Upload Button Footer */}
+1576:                   <label className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-primary/30 rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+1577:                     <Upload className="h-4 w-4 text-primary" />
+1578:                     <span className="text-sm font-medium text-primary">Subir logo pie de pÃ¡gina</span>
+1579:                     <Input
+1580:                       type="file"
+1581:                       accept="image/*"
+1582:                       multiple
+1583:                       onChange={handleFooterLogoUpload}
+1584:                       className="hidden"
+1585:                     />
+1586:                   </label>
+1587:                   <p className="text-xs text-muted-foreground">
+1588:                     Aparecen en pÃ¡ginas internas. MÃ¡x: 2MB
+1589:                   </p>
+1590:                 </div>
+1591:               </div>
+1592: 
+1593:               {/* Content Customization Section */}
+1594:               <div className="space-y-6 pt-6 border-t">
+1595:                 <div className="flex items-center gap-3">
+1596:                   <div className="p-2 bg-primary/10 rounded-lg">
+1597:                     <FileText className="h-4 w-4 text-primary" />
+1598:                   </div>
+1599:                   <h3 className="font-medium">Contenido del Reporte</h3>
+1600:                 </div>
+1601: 
+1602:                 {/* Report Type Selector */}
+1603:                 <div className="space-y-3" data-tutorial="report-type-selector">
+1604:                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+1605:                     TIPO DE REPORTE
+1606:                   </Label>
+1607:                   <Select
+1608:                     value={settings.report_type}
+1609:                     onValueChange={(value: ReportType) => {
+1610:                       // Fetch settings for the new report type to avoid leakage
+1611:                       fetchSettings(value);
+1612:                       toast({
+1613:                         title: "Cargando configuraciÃ³n",
+1614:                         description: `Cambiando al tipo de reporte: ${value}`,
+1615:                       });
+1616:                     }}
+1617:                   >
+1618:                     <SelectTrigger className="w-full">
+1619:                       <SelectValue placeholder="Selecciona un tipo de reporte" />
+1620:                     </SelectTrigger>
+1621:                     <SelectContent>
+1622:                       {reportTypeTemplates.map((t) => (
+1623:                         <SelectItem key={t.id} value={t.id}>
+1624:                           <div className="flex items-center gap-2">
+1625:                             <span>{t.icon}</span>
+1626:                             <span>{t.name}</span>
+1627:                           </div>
+1628:                         </SelectItem>
+1629:                       ))}
+1630:                     </SelectContent>
+1631:                   </Select>
+1632:                   <p className="text-xs text-muted-foreground">
+1633:                     ðŸ’¡ Al cambiar el tipo de reporte, se aplicarÃ¡n las secciones y contenidos predefinidos.
+1634:                   </p>
+1635:                 </div>
+1636: 
+1637:                 {/* Section Order Editor */}
+1638:                 <div className="pt-6 border-t" data-tutorial="section-editor">
+1639:                   <ReportSectionEditor
+1640:                     sections={reportSections}
+1641:                     onSectionsChange={handleSectionsChange}
+1642:                   />
+1643:                 </div>
+1644: 
+1645:                 {/* Company Info */}
+1646:                 <div className="space-y-3" data-tutorial="content-fields">
+1647:                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+1648:                     INFORMACIÃ“N INSTITUCIONAL
+1649:                   </Label>
+1650:                   <div className="space-y-2">
+1651:                     <Input
+1652:                       placeholder="Nombre de la InstituciÃ³n"
+1653:                       value={settings.content_company_name || ''}
+1654:                       onChange={(e) => setSettings({ ...settings, content_company_name: e.target.value })}
+1655:                       className="text-sm"
+1656:                     />
+1657:                     <Input
+1658:                       placeholder="Responsable/Evaluador"
+1659:                       value={settings.content_responsible_agent || ''}
+1660:                       onChange={(e) => setSettings({ ...settings, content_responsible_agent: e.target.value })}
+1661:                       className="text-sm"
+1662:                     />
+1663:                     <div className="p-3 bg-muted/50 rounded-lg">
+1664:                       <p className="text-xs text-muted-foreground">
+1665:                         ðŸ“… <strong>Fecha automÃ¡tica:</strong> La fecha del reporte se genera automÃ¡ticamente al momento de creaciÃ³n.
+1666:                       </p>
+1667:                       <p className="text-xs text-blue-600/80 mt-2 font-medium">
+1668:                         âœ¨ El resto de secciones (Recomendaciones, Avances, etc.) se muestran en la vista previa usando datos aleatorios de tus aprendientes actuales para fines ilustrativos.
+1669:                       </p>
+1670:                     </div>
+1671:                   </div>
+1672:                 </div>
+1673:               </div>
+1674:             </Card>
+1675:           </MotionDiv>
+1676: 
+1677:           {/* Right Column: Preview */}
+1678:           <MotionDiv variants={itemVariants} className="lg:col-span-7">
+1679:             <div className="sticky top-24">
+1680:               <div className="flex items-center justify-between mb-4">
+1681:                 <div className="flex items-center gap-2">
+1682:                   <FileText className="h-5 w-5 text-primary" />
+1683:                   <h2 className="text-xl font-semibold">Vista Previa Real (PDF)</h2>
+1684:                 </div>
+1685:                 <div className="flex items-center gap-2">
+1686:                   <Button
+1687:                     variant="outline"
+1688:                     size="sm"
+1689:                     className="h-8 gap-1.5"
+1690:                     onClick={fetchRandomData}
+1691:                     disabled={isFetchingData}
+1692:                   >
+1693:                     <Sparkles className={`h-3.5 w-3.5 ${isFetchingData ? 'animate-spin' : ''}`} />
+1694:                     Regenerar ejemplo
+1695:                   </Button>
+1696:                   <div className="text-sm text-muted-foreground hidden sm:block">
+1697:                     Tipo: {settings.report_type === 'prediccion' ? 'PredicciÃ³n' : settings.report_type === 'chaea' ? 'Estilo de Aprendizaje' : 'Historial'}
+1698:                   </div>
+1699:                 </div>
+1700:               </div>
+1701:               <Card className="overflow-hidden bg-white shadow-2xl ring-1 ring-black/5 min-h-[800px] flex flex-col relative">
+1702:                 {pdfPreview ? (
+1703:                   <iframe
+1704:                     src={`${pdfPreview}#toolbar=0&navpanes=0&scrollbar=0`}
+1705:                     className="w-full h-[850px] border-none"
+1706:                     title="PDF Preview"
+1707:                   />
+1708:                 ) : (
+1709:                   <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
+1710:                     <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+1711:                       <Loader2 className="h-8 w-8 animate-spin text-primary" />
+1712:                     </div>
+1713:                     <h3 className="text-lg font-medium">Generando Documento</h3>
+1714:                     <p className="text-sm text-muted-foreground max-w-[200px] mt-2">
+1715:                       Esto puede tardar unos segundos dependiendo de los grÃ¡ficos...
+1716:                     </p>
+1717:                   </div>
+1718:                 )}
+1719:               </Card>
+1720:             </div>
+1721:           </MotionDiv>
+1722:         </MotionDiv>
+1723:       </main>
+1724: 
+1725:       <TutorialButton onClick={() => startTutorial(reportSettingsTutorial)} />
+1726:     </div >
+1727:   );
+1728: };
+1729: 
+1730: export default React.memo(ReportSettings);
